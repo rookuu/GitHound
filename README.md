@@ -21,10 +21,92 @@ With GitHound, you get a clear, interactive graph of your GitHub permissions lan
 
 ## Collector Setup & Usage
 
-- **Collects via the GitHub API**  
-  - Requires a Personal Access Token (PAT) with **`read:org`** and **`repo`** scopes  
-  - Fetches org members, teams, repos, branches, and all role assignments  
-  - Outputs a BloodHound‑compatible JSON graph file (`githound_<org>.json`)
+### Creating a Personal Access Token
+
+Settings -> Developer settings -> Personal access tokens -> Fine-grained tokens -> Generate new token
+
+* Repository access -> All repositories
+
+* "Administrator" repository permissions (read)
+* "Contents" repository permissions (read)
+* "Metadata" repository permissions (read)
+
+* "Custom organization roles" organization permissions (read)
+* "Custom repository roles" organization permissions (read)
+* "Members" organization permissions (read)
+
+### Generate Fine-grained Personal Access Token
+
+This README is meant to provide a walkthrough for administrators to create the Fine-grained Personal Access Token that is necessary to collect the data that is necessary for the GitHub based BloodHound Graph. These steps should be followed in the context of an organization administrator in order to ensure the resulting PAT will have full access to Repositories, Users, and Teams in the GitHub Organization.
+
+#### Generate Token
+
+To generate a personal access token browse to your user settings as shown in the image below:
+
+![](./images/1_proile_settings.png)
+
+In the settings menu, scroll to the bottom where you will see the "Developer settings" menu option. Click it.
+
+![](./images/2_developer_settings.png)
+
+GitHub offers many options for programmatic access. GitHound, our collector, is built to work with Fine-grained Personal Access Tokens, so click on that menu item.
+
+![](./images/3_fine-grained_tokens.png)
+
+After reaching the Fine-grained Personal Access Token page, you can click on the "Generate new token" button in the top right corner.
+
+![](./images/4_generate_token.png)
+
+#### Token Settings
+
+Fine-grained Personal Access Tokens offer administrators the ability to specifically control what resources the PAT will have access to.
+
+It is possible to limit the set of repositories that a Fine-grained PAT can interact with. GitHound requires access to all repositories, so we will select the "All repositories" radio button.
+
+![](./images/5_all_repositories.png)
+
+Next, we will define the specific repository and organization permissions that GitHound requires. GitHound is a read-only tool, so we will make sure to specify read-only access for each option as shown in the image below:
+
+![](./images/6_permissions.png)
+
+The following permissions are required:
+
+| Target       | Permission                | Access    |
+|--------------|---------------------------|-----------|
+| Repository   | Administrator             | Read-only |
+| Repository   | Contents                  | Read-only |
+| Repository   | Metadata                  | Read-only |
+| Organization | Administrator             | Read-only |
+| Organization | Custom organization roles | Read-only |
+| Organization | Custom repository roles   | Read-only |
+| Organization | Members                   | Read-only |
+
+#### Save Personal Access Token
+
+Once the PAT is created, GitHub will present it to you as shown below. You must save this value (preferably in a password manager) at this point as you will not be able to recover it in the future.
+
+![Save the PAT](./images/7_save_pat.png)
+
+### Function Table
+
+| Function Name         | Input Data     | Data Type      | API Endpoint | Fine-grained PAT Permissions |
+|-----------------------|----------------|----------------|--------------|------------------------------|
+| Git-HoundOrganization | None           | GHOrganization | [Get an organization](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/orgs?apiVersion=2022-11-28#get-an-organization) | None |
+| Git-HoundTeam         | GHOrganization | GHTeam         | [List teams](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/teams?apiVersion=2022-11-28#list-teams) | "Members" organization permissions (read) |
+| Git-HoundUser         | GHOrganization | GHUser         | [List organization members](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/members?apiVersion=2022-11-28#list-organization-members) | "Members" organization permissions (read) |
+| Git-HoundRepository   | GHOrganization | GHRepository   | [List organization repositories](https://docs.github.com/en/enterprise-cloud@latest/rest/repos/repos?apiVersion=2022-11-28#list-organization-repositories) | "Metadata" repository permissions (read) |
+| Git-HoundBranch       | GHRepository   | GHBranch       | [List branches](https://docs.github.com/en/enterprise-cloud@latest/rest/branches/branches?apiVersion=2022-11-28#list-branches) | "Contents" repository permissions (read) |
+| Git-HoundBranch       | GHRepository   | GHBranch       | [Get branch protection](https://docs.github.com/en/enterprise-cloud@latest/rest/branches/branch-protection?apiVersion=2022-11-28#get-branch-protection) | "Administration" repository permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [List teams](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/teams?apiVersion=2022-11-28#list-teams) | "Members" organization permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [List team members](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/members?apiVersion=2022-11-28#list-team-members) | None |
+| Git-HoundRole         | GHOrganization | GHRole         | [List team membership for a user](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/members?apiVersion=2022-11-28#get-team-membership-for-a-user) | None |
+| Git-HoundRole         | GHOrganization | GHRole         | [List custom repository roles in an organization](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/custom-roles?apiVersion=2022-11-28#list-custom-repository-roles-in-an-organization) | "Custom repository roles" organization permissions (read) or "Administration" organization permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [List organization repositories](https://docs.github.com/en/enterprise-cloud@latest/rest/repos/repos?apiVersion=2022-11-28#list-organization-repositories) | "Metadata" repository permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [List repository collaborators](https://docs.github.com/en/enterprise-cloud@latest/rest/collaborators/collaborators?apiVersion=2022-11-28#list-repository-collaborators) | "Metadata" repository permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [List repository teams](https://docs.github.com/en/enterprise-cloud@latest/rest/repos/repos?apiVersion=2022-11-28#list-repository-teams) | "Administration" repository permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [Get all organization roles for an organization](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/organization-roles?apiVersion=2022-11-28#get-all-organization-roles-for-an-organization) | "Custom organization roles" organization permission (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [List organization members](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/members?apiVersion=2022-11-28#list-organization-members) | "Members" organization permissions (read) |
+| Git-HoundRole         | GHOrganization | GHRole         | [Check organization membership for a user](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/members?apiVersion=2022-11-28#check-organization-membership-for-a-user) | "Members" organization permissions (read) |
 
 ## Schema
 
