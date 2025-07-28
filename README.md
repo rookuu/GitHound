@@ -34,7 +34,7 @@ Nodes correspond to each object type.
 
 | Node                                                                     | Description                                                                                    | Icon        | Color   |
 |--------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------|---------|
-| <img src="./images/white_GHOrganization.svg" width="30"/> GHOrganization | A GitHub Organization—top‑level container for repositories, teams, and settings.               | building    | #5FED83 |
+| <img src="./images/white_GHOrganization.svg" width="30"/> GHOrganization | A GitHub Organization—top‑level container for repositories, teams, & settings.               | building    | #5FED83 |
 | <img src="./images/white_GHUser.svg" width="30"/> GHUser                 | An individual GitHub user account.                                                             | user        | #FF8E40 |
 | <img src="./images/white_GHTeam.svg" width="30"/> GHTeam                 | A team within an organization, grouping users for shared access and collaboration.             | user-group  | #C06EFF |
 | <img src="./images/white_GHRepository.svg" width="30"/> GHRepository     | A code repository in an organization (or user account), containing files, issues, etc.         | box-archive | #9EECFF |
