@@ -32,16 +32,16 @@ With GitHound, you get a clear, interactive graph of your GitHub permissions lan
 
 Nodes correspond to each object type.
 
-| Node             | Description                                               | Image                                                                    | Icon        | Color |
-|------------------|-----------------------------------------------------------|--------------------------------------------------------------------------|-------------|-------|
-| `GHOrganization` | A GitHub Organization—top‑level container for repositories, teams, and settings.               | <img src="./images/white_GHOrganization.svg" width="30" class="center"/> | building    | #5FED83 |
-| `GHUser`         | An individual GitHub user account.                                                             | <img src="./images/white_GHUser.svg" width="30" class="center"/>         | user        | #FF8E40 |
-| `GHTeam`         | A team within an organization, grouping users for shared access and collaboration.             | <img src="./images/white_GHTeam.svg" width="30" class="center"/>         | user-group  | #C06EFF |
-| `GHRepository`   | A code repository in an organization (or user account), containing files, issues, etc.         | <img src="./images/white_GHRepository.svg" width="30" class="center"/>   | box-archive | #9EECFF |
-| `GHBranch`       | A named reference in a repository (e.g. `main`, `develop`) representing a line of development. | <img src="./images/white_GHBranch.svg" width="30" class="center"/>       | code-branch | #FF80D2 |
-| `GHOrgRole`      | The role a user has at the organization level (e.g. `admin`, `member`).                        | <img src="./images/white_GHOrgRole.svg" width="30" class="center"/>      | user-tie    | #BFFFD1 |
-| `GHTeamRole`     | The role a user has within a team (e.g. `maintainer`, `member`).                               | <img src="./images/white_GHTeamRole.svg" width="30" class="center"/>     | user-tie    | #D0B0FF |
-| `GHRepoRole`     | The permission granted to a user or team on a repository (e.g. `admin`, `write`, `read`).      | <img src="./images/white_GHRepoRole.svg" width="30" class="center"/>     | user-tie    | #DEFEFA |
+| Node                                                                     | Description                                                                                    | Icon        | Color   |
+|--------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------|---------|
+| <img src="./images/white_GHOrganization.svg" width="30"/> GHOrganization | A GitHub Organization—top‑level container for repositories, teams, and settings.               | building    | #5FED83 |
+| <img src="./images/white_GHUser.svg" width="30"/> GHUser                 | An individual GitHub user account.                                                             | user        | #FF8E40 |
+| <img src="./images/white_GHTeam.svg" width="30"/> GHTeam                 | A team within an organization, grouping users for shared access and collaboration.             | user-group  | #C06EFF |
+| <img src="./images/white_GHRepository.svg" width="30"/> GHRepository     | A code repository in an organization (or user account), containing files, issues, etc.         | box-archive | #9EECFF |
+| <img src="./images/white_GHBranch.svg" width="30"/> GHBranch             | A named reference in a repository (e.g. `main`, `develop`) representing a line of development. | code-branch | #FF80D2 |
+| <img src="./images/white_GHOrgRole.svg" width="30"/> GHOrgRole           | The role a user has at the organization level (e.g. `admin`, `member`).                        | user-tie    | #BFFFD1 |
+| <img src="./images/white_GHTeamRole.svg" width="30"/> GHTeamRole         | The role a user has within a team (e.g. `maintainer`, `member`).                               | user-tie    | #D0B0FF |
+| <img src="./images/white_GHRepoRole.svg" width="30"/> GHRepoRole         | The permission granted to a user or team on a repository (e.g. `admin`, `write`, `read`).      | user-tie    | #DEFEFA |
 
 ### Edges
 
