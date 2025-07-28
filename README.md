@@ -12,7 +12,7 @@ Nodes correspond to each object type.
 
 | Node             | Description                                               | Icon | Color |
 |------------------|-----------------------------------------------------------|------|-------|
-| `GHOrganization` |                                     | building | #5FED83 |
+| `GHOrganization` |                                     | <img src="./images/white_GHOrganization.svg" width="50" /> | #5FED83 |
 | `GHUser`         |      | user     | #FF8E40 |
 | `GHTeam`         |                           | user-group | #C06EFF |
 | `GHRepository`   |                        | box-archive | #9EECFF |
