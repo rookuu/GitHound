@@ -2,7 +2,29 @@
 
 ## Overview
 
+**GitHound** is a BloodHound OpenGraph collector for GitHub, designed to map your organization’s structure and permissions into a navigable attack‑path graph. It:
+
+- **Models Key GitHub Entities**  
+  - **GHOrganization**: Your GitHub org metadata  
+  - **GHUser**: Individual user accounts in the org  
+  - **GHTeam**: Teams that group users for shared access  
+  - **GHRepository**: Repositories within the org  
+  - **GHBranch**: Named branches in each repo  
+  - **GHOrgRole**, **GHTeamRole**, **GHRepoRole**: Org‑, team‑, and repo‑level roles/permissions  
+
+- **Visualize & Analyze in BloodHound**  
+  - **Access Audits**: See at a glance who has admin/write/read on repos and branches  
+  - **Compliance Checks**: Validate least‑privilege across teams and repos  
+  - **Incident Response**: Trace privilege escalations and group memberships  
+
+With GitHound, you get a clear, interactive graph of your GitHub permissions landscape—perfect for security reviews, compliance audits, and rapid incident investigations.  
+
 ## Collector Setup & Usage
+
+- **Collects via the GitHub API**  
+  - Requires a Personal Access Token (PAT) with **`read:org`** and **`repo`** scopes  
+  - Fetches org members, teams, repos, branches, and all role assignments  
+  - Outputs a BloodHound‑compatible JSON graph file (`githound_<org>.json`)
 
 ## Schema
 
