@@ -135,6 +135,35 @@ Nodes correspond to each object type.
 
 ### Edges
 
+| Edge Type              | Source           | Target           | Travesable |
+|------------------------|------------------|------------------|------------|
+| `GHContains`           | `GHOrganization` | `GHOrgRole`      | n          |
+| `GHContains`           | `GHOrganization` | `GHRepoRole`     | n          |
+| `GHContains`           | `GHOrganization` | `GHRepository`   | n          |
+| `GHContains`           | `GHOrganization` | `GHTeamRole`     | n          |
+| `GHContains`           | `GHOrganization` | `GHTeam`         | n          |
+| `GHContains`           | `GHOrganization` | `GHUser`         | n          |
+| `OPContains`           | `GHRepository`   | `GHBranch`       | n          |
+| `GHHasRole`            | `GHUser`         | `GHOrgRole`      | y          |
+| `GHHasRole`            | `GHUser`         | `GHRepoRole`     | y          |
+| `GHHasRole`            | `GHUser`         | `GHTeamRole`     | y          |
+| `GHMemberOf`           | `GHTeamRole`     | `GHTeam`         | y          |
+| `GHMemberOf`           | `GHTeam`         | `GHTeam`         | y          |
+| `GHAddMember`          | `GHTeamRole`     | `GHTeam`         | y          |
+| `GHCreateRepository`   | `GHOrgRole`      | `GHOrganization` | y          |
+| `GHInviteMember`       | `GHOrgRole`      | `GHOrganization` | y          |
+| `GHAddCollaborator`    | `GHOrgRole`      | `GHOrganization` | y          |
+| `GHCreateTeam`         | `GHOrgRole`      | `GHOrganization` | y          |
+| `GHTransferRepository` | `GHOrgRole`      | `GHOrganization` | y          |
+| `GHOwnerOf`            | `GHOrganization` | `GHRepository`   | y          |
+| `OPViewItems`      | `OPUser`         | `OPVault`         | User can view items in the vault             | y          |
+| `OPViewItems`      | `OPGroup`        | `OPVault`         | Group can view items in the vault            | y          |
+| `OPManageVault`    | `OPUser`         | `OPVault`         | User can manage the vault                    | y          |
+| `OPManageVault`    | `OPGroup`        | `OPVault`         | Group can manage the vault                   | y          |
+| `OPMemberOf`       | `OPUser`         | `OPGroup`         | User is a member of a group                  | y          |
+| `OPManageGroups`   | `OPGroup`        | `OPAccount`       | Group can manage other groups in the account | y          |
+| `OPRecoverAccounts`| `OPGroup`        | `OPAccount`       | Group can recover accounts                   | y          |
+
 ## Contributing
 
 We welcome and appreciate your contributions! To make the process smooth and efficient, please follow these steps:
