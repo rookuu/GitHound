@@ -118,6 +118,8 @@ This will output the payload to the current working directory as `githound_<your
 
 ## Schema
 
+![](./images/githound_schema.png)
+
 ### Nodes
 
 Nodes correspond to each object type.
