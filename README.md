@@ -87,26 +87,32 @@ Once the PAT is created, GitHub will present it to you as shown below. You must 
 
 ![Save the PAT](./images/7_save_pat.png)
 
-### Function Table
+### Running the Collection
 
-| Function Name         | Input Data     | Data Type      | API Endpoint | Fine-grained PAT Permissions |
-|-----------------------|----------------|----------------|--------------|------------------------------|
-| Git-HoundOrganization | None           | GHOrganization | [Get an organization](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/orgs?apiVersion=2022-11-28#get-an-organization) | None |
-| Git-HoundTeam         | GHOrganization | GHTeam         | [List teams](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/teams?apiVersion=2022-11-28#list-teams) | "Members" organization permissions (read) |
-| Git-HoundUser         | GHOrganization | GHUser         | [List organization members](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/members?apiVersion=2022-11-28#list-organization-members) | "Members" organization permissions (read) |
-| Git-HoundRepository   | GHOrganization | GHRepository   | [List organization repositories](https://docs.github.com/en/enterprise-cloud@latest/rest/repos/repos?apiVersion=2022-11-28#list-organization-repositories) | "Metadata" repository permissions (read) |
-| Git-HoundBranch       | GHRepository   | GHBranch       | [List branches](https://docs.github.com/en/enterprise-cloud@latest/rest/branches/branches?apiVersion=2022-11-28#list-branches) | "Contents" repository permissions (read) |
-| Git-HoundBranch       | GHRepository   | GHBranch       | [Get branch protection](https://docs.github.com/en/enterprise-cloud@latest/rest/branches/branch-protection?apiVersion=2022-11-28#get-branch-protection) | "Administration" repository permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [List teams](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/teams?apiVersion=2022-11-28#list-teams) | "Members" organization permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [List team members](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/members?apiVersion=2022-11-28#list-team-members) | None |
-| Git-HoundRole         | GHOrganization | GHRole         | [List team membership for a user](https://docs.github.com/en/enterprise-cloud@latest/rest/teams/members?apiVersion=2022-11-28#get-team-membership-for-a-user) | None |
-| Git-HoundRole         | GHOrganization | GHRole         | [List custom repository roles in an organization](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/custom-roles?apiVersion=2022-11-28#list-custom-repository-roles-in-an-organization) | "Custom repository roles" organization permissions (read) or "Administration" organization permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [List organization repositories](https://docs.github.com/en/enterprise-cloud@latest/rest/repos/repos?apiVersion=2022-11-28#list-organization-repositories) | "Metadata" repository permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [List repository collaborators](https://docs.github.com/en/enterprise-cloud@latest/rest/collaborators/collaborators?apiVersion=2022-11-28#list-repository-collaborators) | "Metadata" repository permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [List repository teams](https://docs.github.com/en/enterprise-cloud@latest/rest/repos/repos?apiVersion=2022-11-28#list-repository-teams) | "Administration" repository permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [Get all organization roles for an organization](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/organization-roles?apiVersion=2022-11-28#get-all-organization-roles-for-an-organization) | "Custom organization roles" organization permission (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [List organization members](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/members?apiVersion=2022-11-28#list-organization-members) | "Members" organization permissions (read) |
-| Git-HoundRole         | GHOrganization | GHRole         | [Check organization membership for a user](https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/members?apiVersion=2022-11-28#check-organization-membership-for-a-user) | "Members" organization permissions (read) |
+1. Open a PowerShell terminal
+2. Load `github.ps1` in your current PowerShell session:
+
+ ```powershell
+  . ./github.ps1
+ ```
+
+3. Create a GitHub Session using your Personal Access Token.
+
+```powershell
+$session = New-GitHubSession -OrganizationName <Name of your Organization> -Token (Get-Clipboard)
+```
+
+Note: You must specify the name of your GitHub organziation. For example, this repository is part of the `SpecterOps` organization, so I would specify `SpecterOps` as the argument for the OrganizationName parameter. Additionally, you must specify your Personal Access Token. I find that it is easiest to paste it directly from the clipboard as this is where it will be after you create it or if you save it in a password manager.
+
+4.  Run the collection on the specified organization:
+
+```powershell
+Invoke-GitHound -Session $session
+```
+
+This will output the payload to the current working directory as `githound_<your_org_identifier>.json`.
+
+5. Upload the payload via the Ingest File page in BloodHound or via the API.
 
 ## Schema
 
@@ -126,10 +132,6 @@ Nodes correspond to each object type.
 | <img src="./images/white_GHRepoRole.svg" width="30"/> GHRepoRole         | The permission granted to a user or team on a repository (e.g. `admin`, `write`, `read`).      | user-tie    | #DEFEFA |
 
 ### Edges
-
-Edges capture every relationship; who contaiins what, membership, read vs. write permissions, etc.
-
-## Usage Examples
 
 ## Contributing
 
