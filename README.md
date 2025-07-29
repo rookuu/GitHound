@@ -135,34 +135,54 @@ Nodes correspond to each object type.
 
 ### Edges
 
-| Edge Type              | Source           | Target           | Travesable |
-|------------------------|------------------|------------------|------------|
-| `GHContains`           | `GHOrganization` | `GHOrgRole`      | n          |
-| `GHContains`           | `GHOrganization` | `GHRepoRole`     | n          |
-| `GHContains`           | `GHOrganization` | `GHRepository`   | n          |
-| `GHContains`           | `GHOrganization` | `GHTeamRole`     | n          |
-| `GHContains`           | `GHOrganization` | `GHTeam`         | n          |
-| `GHContains`           | `GHOrganization` | `GHUser`         | n          |
-| `OPContains`           | `GHRepository`   | `GHBranch`       | n          |
-| `GHHasRole`            | `GHUser`         | `GHOrgRole`      | y          |
-| `GHHasRole`            | `GHUser`         | `GHRepoRole`     | y          |
-| `GHHasRole`            | `GHUser`         | `GHTeamRole`     | y          |
-| `GHMemberOf`           | `GHTeamRole`     | `GHTeam`         | y          |
-| `GHMemberOf`           | `GHTeam`         | `GHTeam`         | y          |
-| `GHAddMember`          | `GHTeamRole`     | `GHTeam`         | y          |
-| `GHCreateRepository`   | `GHOrgRole`      | `GHOrganization` | y          |
-| `GHInviteMember`       | `GHOrgRole`      | `GHOrganization` | y          |
-| `GHAddCollaborator`    | `GHOrgRole`      | `GHOrganization` | y          |
-| `GHCreateTeam`         | `GHOrgRole`      | `GHOrganization` | y          |
-| `GHTransferRepository` | `GHOrgRole`      | `GHOrganization` | y          |
-| `GHOwnerOf`            | `GHOrganization` | `GHRepository`   | y          |
-| `OPViewItems`      | `OPUser`         | `OPVault`         | User can view items in the vault             | y          |
-| `OPViewItems`      | `OPGroup`        | `OPVault`         | Group can view items in the vault            | y          |
-| `OPManageVault`    | `OPUser`         | `OPVault`         | User can manage the vault                    | y          |
-| `OPManageVault`    | `OPGroup`        | `OPVault`         | Group can manage the vault                   | y          |
-| `OPMemberOf`       | `OPUser`         | `OPGroup`         | User is a member of a group                  | y          |
-| `OPManageGroups`   | `OPGroup`        | `OPAccount`       | Group can manage other groups in the account | y          |
-| `OPRecoverAccounts`| `OPGroup`        | `OPAccount`       | Group can recover accounts                   | y          |
+| Edge Type                         | Source           | Target           | Travesable | Custom |
+|-----------------------------------|------------------|------------------|------------|--------|
+| `GHContains`                      | `GHOrganization` | `GHOrgRole`      | n          | n/a    |
+| `GHContains`                      | `GHOrganization` | `GHRepoRole`     | n          | n/a    |
+| `GHContains`                      | `GHOrganization` | `GHRepository`   | n          | n/a    |
+| `GHContains`                      | `GHOrganization` | `GHTeamRole`     | n          | n/a    |
+| `GHContains`                      | `GHOrganization` | `GHTeam`         | n          | n/a    |
+| `GHContains`                      | `GHOrganization` | `GHUser`         | n          | n/a    |
+| `OPContains`                      | `GHRepository`   | `GHBranch`       | n          | n/a    |
+| `GHHasRole`                       | `GHUser`         | `GHOrgRole`      | y          | n/a    |
+| `GHHasRole`                       | `GHUser`         | `GHRepoRole`     | y          | n/a    |
+| `GHHasRole`                       | `GHUser`         | `GHTeamRole`     | y          | n/a    |
+| `GHMemberOf`                      | `GHTeamRole`     | `GHTeam`         | y          | n/a    |
+| `GHMemberOf`                      | `GHTeam`         | `GHTeam`         | y          | n/a    |
+| `GHAddMember`                     | `GHTeamRole`     | `GHTeam`         | y          | n/a    |
+| `GHCreateRepository`              | `GHOrgRole`      | `GHOrganization` | y          | n/a    |
+| `GHInviteMember`                  | `GHOrgRole`      | `GHOrganization` | y          | n/a    |
+| `GHAddCollaborator`               | `GHOrgRole`      | `GHOrganization` | y          | n/a    |
+| `GHCreateTeam`                    | `GHOrgRole`      | `GHOrganization` | y          | n/a    |
+| `GHTransferRepository`            | `GHOrgRole`      | `GHOrganization` | y          | n/a    |
+| `GHOwns`                          | `GHOrganization` | `GHRepository`   | y          | n/a    |
+| `GHBypassPullRequestAllowances`   | `GHTeam`         | `GHBranch`       | y          | n/a    |
+| `GHBypassPullRequestAllowances`   | `GHUser`         | `GHBranch`       | y          | n/a    |
+| `GHRestrictionsCanPush`           | `GHTeam`         | `GHBranch`       | y          | n/a    |
+| `GHRestrictionsCanPush`           | `GHUser`         | `GHBranch`       | y          | n/a    |
+| `GHHasBranch`                     | `GHRepository`   | `GHBranch`       | n          | n/a    |
+| `GHHasBaseRole`                   | `GHOrgRole`      | `GHOrgRole`      | y          | n/a    |
+| `GHHasBaseRole`                   | `GHOrgRole`      | `GHRepoRole`     | y          | n/a    |
+| `GHHasBaseRole`                   | `GHRepoRole`     | `GHRepoRole`     | y          | n/a    |
+| `GHCanPull`                       | `GHRepoRole`     | `GHRepository`   | y          | n/a    |
+| `GHReadRepoContents`              | `GHRepoRole`     | `GHRepository`   | y          | n      |
+| `GHCanPush`                       | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHWriteRepoContents`             | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHWriteRepoPullRequests`         | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHAdminTo`                       | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHManageWebhooks`                | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHManageDeployKeys`              | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHPushProtectedBranch`           | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHDeleteAlertsCodeScanning`      | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHViewSecretScanningAlerts`      | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHRunOrgMigration`               | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHBypassProtections`             | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHManageSecurityProducts`        | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHManageRepoSecurityProducts`    | `GHRepoRole`     | `GHRepository`   | n          | n      |
+| `GHEditProtections`               | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHJumpMergeQueue`                | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHCreateSoloMergeQueue`          | `GHRepoRole`     | `GHRepository`   | n          | y      |
+| `GHEditRepoCustomPropertiesValue` | `GHRepoRole`     | `GHRepository`   | n          | y      |
 
 ## Contributing
 
