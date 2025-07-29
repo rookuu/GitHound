@@ -21,7 +21,7 @@ With GitHound, you get a clear, interactive graph of your GitHub permissions lan
 
 ## Collector Setup & Usage
 
-### Creating a Personal Access Token
+### Creating a Personal Access Token Overview
 
 Settings -> Developer settings -> Personal access tokens -> Fine-grained tokens -> Generate new token
 
@@ -35,9 +35,9 @@ Settings -> Developer settings -> Personal access tokens -> Fine-grained tokens 
 * "Custom repository roles" organization permissions (read)
 * "Members" organization permissions (read)
 
-### Generate Fine-grained Personal Access Token
+### Generate Fine-grained Personal Access Token (Detailed)
 
-This README is meant to provide a walkthrough for administrators to create the Fine-grained Personal Access Token that is necessary to collect the data that is necessary for the GitHub based BloodHound Graph. These steps should be followed in the context of an organization administrator in order to ensure the resulting PAT will have full access to Repositories, Users, and Teams in the GitHub Organization.
+This walkthrough is for administrators to create the Fine-grained Personal Access Token that is necessary to collect the data that is necessary for the GitHub based BloodHound Graph. These steps should be followed in the context of an organization administrator in order to ensure the resulting PAT will have full access to Repositories, Users, and Teams in the GitHub Organization.
 
 #### Generate Token
 
