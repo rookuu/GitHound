@@ -1,5 +1,7 @@
 # GitHound
 
+![](./images/github_bloodhound.png)
+
 ## Overview
 
 **GitHound** is a BloodHound OpenGraph collector for GitHub, designed to map your organization’s structure and permissions into a navigable attack‑path graph. It:
