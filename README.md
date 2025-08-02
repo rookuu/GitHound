@@ -116,6 +116,10 @@ This will output the payload to the current working directory as `githound_<your
 
 5. Upload the payload via the Ingest File page in BloodHound or via the API.
 
+### Sample
+
+If you do not have a GitHub Enterprise environment or if you want to test out GitHound before collecting from your own production environment, we've included a sample data set at `./samples/example.json`.
+
 ## Schema
 
 ![](./images/githound_schema.png)
