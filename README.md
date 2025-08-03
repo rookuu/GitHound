@@ -158,7 +158,7 @@ Nodes correspond to each object type.
 | `GHAddMember`                     | `GHTeamRole`     | `GHTeam`         | y          | n/a    |
 | `GHCreateRepository`              | `GHOrgRole`      | `GHOrganization` | n          | n/a    |
 | `GHInviteMember`                  | `GHOrgRole`      | `GHOrganization` | n          | n/a    |
-| `GHAddCollaborator`               | `GHOrgRole`      | `GHOrganization` | y          | n/a    |
+| `GHAddCollaborator`               | `GHOrgRole`      | `GHOrganization` | n          | n/a    |
 | `GHCreateTeam`                    | `GHOrgRole`      | `GHOrganization` | n          | n/a    |
 | `GHTransferRepository`            | `GHOrgRole`      | `GHOrganization` | n          | n/a    |
 | `GHOwns`                          | `GHOrganization` | `GHRepository`   | y          | n/a    |
@@ -189,6 +189,66 @@ Nodes correspond to each object type.
 | `GHJumpMergeQueue`                | `GHRepoRole`     | `GHRepository`   | n          | y      |
 | `GHCreateSoloMergeQueue`          | `GHRepoRole`     | `GHRepository`   | n          | y      |
 | `GHEditRepoCustomPropertiesValue` | `GHRepoRole`     | `GHRepository`   | n          | y      |
+
+## Usage Examples
+
+### What Repos does a User have Write Access to?
+
+Find the object identifier for your target user:
+
+```cypher
+MATCH (n:GHUser)
+RETURN n
+```
+
+HINT: Select Table Layout
+
+![](./images/table-layout.mov)
+
+Replace the `<object_id>` value in the subsequent query with the user's object identifier:
+
+```cypher
+MATCH p = (:GHUser {objectid:"<object_id>"})-[:GHMemberOf|GHAddMember|GHHasRole|GHHasBaseRole|GHOwns*1..]->(:GHRepoRole)-[:GHWriteRepoContents]->(:GHRepository)
+RETURN p
+```
+
+![](./images/user-repo.png)
+
+### Who has Write Access to a Repo?
+
+Obtain the object identifier for your target repository:
+
+```cypher
+MATCH (n:GHRepository)
+RETURN n
+```
+
+Take the object identifier for your target repository and replace the `<object_id>` value in the subsequent query with it:
+
+```cypher
+MATCH p = (:GHUser)-[:GHMemberOf|GHHasRole|GHHasBaseRole|GHOwns|GHAddMember*1..]->(:GHRepoRole)-[:GHWriteRepoContents]->(:GHRepository {objectid:"<object_id>"})
+RETURN p
+```
+
+![](./images/who-repo.png)
+
+### Members of the Organization Admins (Domain Admin equivalent)?
+
+```cypher
+MATCH p = (:GHUser)-[:GHHasRole|GHHasBaseRole]->(:GHOrgRole {short_name: "owners"})
+RETURN p
+```
+
+![](.images/org-admins.png)
+
+### Users that are managed via SSO (Entra-only)
+
+```cypher
+MATCH p = (:AZUser)-[:SyncedToGHUser]->(:GHUser)
+RETURN p
+```
+
+![](./sso-users.png)
 
 ## Contributing
 
