@@ -239,7 +239,7 @@ MATCH p = (:GHUser)-[:GHHasRole|GHHasBaseRole]->(:GHOrgRole {short_name: "owners
 RETURN p
 ```
 
-![](.images/org-admins.png)
+![](./images/org-admins.png)
 
 ### Users that are managed via SSO (Entra-only)
 
@@ -248,7 +248,7 @@ MATCH p = (:AZUser)-[:SyncedToGHUser]->(:GHUser)
 RETURN p
 ```
 
-![](./sso-users.png)
+![](./images/sso-users.png)
 
 ## Contributing
 
