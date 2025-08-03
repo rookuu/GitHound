@@ -203,7 +203,7 @@ RETURN n
 
 HINT: Select Table Layout
 
-![](./images/table-layout.mov)
+https://github.com/user-attachments/assets/1ddfd075-2a15-4aa9-bad7-74c43e6c82d6
 
 Replace the `<object_id>` value in the subsequent query with the user's object identifier:
 
