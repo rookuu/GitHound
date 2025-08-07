@@ -146,7 +146,7 @@ function Invoke-GeneratePATForApp {
         $pemContent = $SigningKeyPEM -replace "-----BEGIN RSA PRIVATE KEY-----", "" -replace "-----END RSA PRIVATE KEY-----", "" -replace '\s', ""
         $keyBytes = [Convert]::FromBase64String($pemContent)
         
-        $rsa.ImportPkcs8PrivateKey($keyBytes, [ref]$null)
+        $rsa.ImportRSAPrivateKey($keyBytes, [ref]$null)
         
         $header = @{
             'alg' = 'RS256'
