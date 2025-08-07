@@ -464,7 +464,7 @@ function Git-HoundUser
         try {
             $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
         } catch {
-            Write-Verbose "User $($user.login) could not be found via api"
+            Write-Warning "User $($user.login) could not be found via api"
             continue
         }
 
@@ -573,110 +573,115 @@ function Git-HoundBranch
             {
                 $BranchProtections = [pscustomobject]@{}
                 $BranchProtectionProperties = [ordered]@{}
-                if ($branch.protection.enabled -and $branch.protection_url) {
-                    $Protections = Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.Properties.full_name)/branches/$($branch.name)/protection"
 
-                    $BranchProtections | Add-Member -MemberType NoteProperty -Name "EnforceAdmins" -Value $Protections.enforce_admins.enabled
-                    $BranchProtections | Add-Member -MemberType NoteProperty -Name "LockBranch" -Value $Protections.lock_branch.enabled
-                    $BranchProtectionProperties["protection_enforce_admins"] = $Protections.enforce_admins.enabled
-                    $BranchProtectionProperties["protection_lock_branch"] = $Protections.lock_branch.enabled
+                try {
+                    if ($branch.protection.enabled -and $branch.protection_url) {
+                        $Protections = Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.Properties.full_name)/branches/$($branch.name)/protection"
 
-                    if ($Protections.required_pull_request_reviews) {
-                        # pull requests are required before merging
+                        $BranchProtections | Add-Member -MemberType NoteProperty -Name "EnforceAdmins" -Value $Protections.enforce_admins.enabled
+                        $BranchProtections | Add-Member -MemberType NoteProperty -Name "LockBranch" -Value $Protections.lock_branch.enabled
+                        $BranchProtectionProperties["protection_enforce_admins"] = $Protections.enforce_admins.enabled
+                        $BranchProtectionProperties["protection_lock_branch"] = $Protections.lock_branch.enabled
 
-                        $BranchProtectionProperties["protection_required_pull_request_reviews"] = $False
-                        
-                        $BranchProtections | Add-Member -MemberType NoteProperty -Name "RequiredApprovingReviewCount" -Value $Protections.required_pull_request_reviews.required_approving_review_count
-                        $BranchProtections | Add-Member -MemberType NoteProperty -Name "RequireCodeOwnerReviews" -Value $Protections.required_pull_request_reviews.require_code_owner_reviews
-                        $BranchProtections | Add-Member -MemberType NoteProperty -Name "RequireLastPushApproval" -Value $Protections.required_pull_request_reviews.require_last_push_approval
-                        if ($Protections.required_pull_request_reviews.required_approving_review_count) {
-                            $BranchProtectionProperties["protection_required_approving_review_count"] = $Protections.required_pull_request_reviews.required_approving_review_count
-                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
+                        if ($Protections.required_pull_request_reviews) {
+                            # pull requests are required before merging
+
+                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $False
+                            
+                            $BranchProtections | Add-Member -MemberType NoteProperty -Name "RequiredApprovingReviewCount" -Value $Protections.required_pull_request_reviews.required_approving_review_count
+                            $BranchProtections | Add-Member -MemberType NoteProperty -Name "RequireCodeOwnerReviews" -Value $Protections.required_pull_request_reviews.require_code_owner_reviews
+                            $BranchProtections | Add-Member -MemberType NoteProperty -Name "RequireLastPushApproval" -Value $Protections.required_pull_request_reviews.require_last_push_approval
+                            if ($Protections.required_pull_request_reviews.required_approving_review_count) {
+                                $BranchProtectionProperties["protection_required_approving_review_count"] = $Protections.required_pull_request_reviews.required_approving_review_count
+                                $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
+                            }
+                            else {
+                                $BranchProtectionProperties["protection_required_approving_review_count"] = 0
+                            }
+                            if ($Protections.required_pull_request_reviews.require_code_owner_reviews > 0) {
+                                $BranchProtectionProperties["protection_require_code_owner_reviews"] = $Protections.required_pull_request_reviews.require_code_owner_reviews
+                                $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
+                            }
+                            else {
+                                $BranchProtectionProperties["protection_require_code_owner_reviews"] = $False
+                            }
+                            if ($Protections.required_pull_request_reviews.require_last_push_approval) {
+                                $BranchProtectionProperties["protection_require_last_push_approval"] = $Protections.required_pull_request_reviews.require_last_push_approval
+                                $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
+                            }
+                            else {
+                                $BranchProtectionProperties["protection_require_last_push_approval"] = $False
+                            }
+
+                            $BypassPrincipals = [System.Collections.Generic.List[pscustomobject]]::new()
+
+                            # We need an edge here
+                            foreach($user in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.users) {
+                                $principal = [pscustomobject]@{
+                                    ObjectIdentifier = $user.node_id
+                                    ObjectType = 'GHUser'
+                                }
+                                $BypassPrincipals.Add($principal)
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $user.node_id -EndId $branch.commit.sha))
+                            }
+
+                            # We need an edge here
+                            foreach($team in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.teams) {
+                                $principal = [pscustomobject]@{
+                                    ObjectIdentifier = $team.node_id
+                                    ObjectType = 'GHTeam'
+                                }
+                                $BypassPrincipals.Add($principal)
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $team.node_id -EndId $branch.commit.sha))
+                            }
+
+                            # TODO: handle apps?
+
+                            if ($BypassPrincipals) {
+                                $BranchProtections | Add-Member -MemberType NoteProperty -Name "BypassPullRequestAllowances" -Value $BypassPrincipals
+                                $BranchProtectionProperties["protection_bypass_pull_request_allowances"] = $BypassPrincipals.Count
+                            }
+                            else {
+                                $BranchProtectionProperties["protection_bypass_pull_request_allowances"] = 0
+                            }
                         }
                         else {
-                            $BranchProtectionProperties["protection_required_approving_review_count"] = 0
+                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $False
                         }
-                        if ($Protections.required_pull_request_reviews.require_code_owner_reviews > 0) {
-                            $BranchProtectionProperties["protection_require_code_owner_reviews"] = $Protections.required_pull_request_reviews.require_code_owner_reviews
-                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
+
+                        if ($Protections.restrictions) {
+                            $RestrictionPrincipals = [System.Collections.Generic.List[pscustomobject]]::new()
+                            foreach($user in $Protections.restrictions.users) {
+                                $principal = [pscustomobject]@{
+                                    ObjectIdentifier = $user.node_id
+                                    ObjectType = 'GHUser'
+                                }
+                                $RestrictionPrincipals.Add($principal)
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $user.node_id -EndId $branch.commit.sha))
+                            }
+
+                            foreach($team in $Protections.restrictions.team) {
+                                $principal = [pscustomobject]@{
+                                    ObjectIdentifier = $team.node_id
+                                    ObjectType = 'GHTeam'
+                                }
+                                $RestrictionPrincipals.Add($principal)
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $team.node_id -EndId $branch.commit.sha))
+                            }
+
+                            # TODO: handle apps?
+
+                            if ($RestrictionPrincipals) {
+                                $BranchProtections | Add-Member -MemberType NoteProperty -Name "Restrictions" -Value $RestrictionPrincipals
+                                $BranchProtectionProperties["protection_push_restrictions"] = $RestrictionPrincipals.Count
+                            }
                         }
                         else {
-                            $BranchProtectionProperties["protection_require_code_owner_reviews"] = $False
-                        }
-                        if ($Protections.required_pull_request_reviews.require_last_push_approval) {
-                            $BranchProtectionProperties["protection_require_last_push_approval"] = $Protections.required_pull_request_reviews.require_last_push_approval
-                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
-                        }
-                        else {
-                            $BranchProtectionProperties["protection_require_last_push_approval"] = $False
-                        }
-
-                        $BypassPrincipals = [System.Collections.Generic.List[pscustomobject]]::new()
-
-                        # We need an edge here
-                        foreach($user in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.users) {
-                            $principal = [pscustomobject]@{
-                                ObjectIdentifier = $user.node_id
-                                ObjectType = 'GHUser'
-                            }
-                            $BypassPrincipals.Add($principal)
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $user.node_id -EndId $branch.commit.sha))
-                        }
-
-                        # We need an edge here
-                        foreach($team in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.teams) {
-                            $principal = [pscustomobject]@{
-                                ObjectIdentifier = $team.node_id
-                                ObjectType = 'GHTeam'
-                            }
-                            $BypassPrincipals.Add($principal)
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $team.node_id -EndId $branch.commit.sha))
-                        }
-
-                        # TODO: handle apps?
-
-                        if ($BypassPrincipals) {
-                            $BranchProtections | Add-Member -MemberType NoteProperty -Name "BypassPullRequestAllowances" -Value $BypassPrincipals
-                            $BranchProtectionProperties["protection_bypass_pull_request_allowances"] = $BypassPrincipals.Count
-                        }
-                        else {
-                            $BranchProtectionProperties["protection_bypass_pull_request_allowances"] = 0
+                            $BranchProtectionProperties["protection_push_restrictions"] = 0
                         }
                     }
-                    else {
-                        $BranchProtectionProperties["protection_required_pull_request_reviews"] = $False
-                    }
-
-                    if ($Protections.restrictions) {
-                        $RestrictionPrincipals = [System.Collections.Generic.List[pscustomobject]]::new()
-                        foreach($user in $Protections.restrictions.users) {
-                            $principal = [pscustomobject]@{
-                                ObjectIdentifier = $user.node_id
-                                ObjectType = 'GHUser'
-                            }
-                            $RestrictionPrincipals.Add($principal)
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $user.node_id -EndId $branch.commit.sha))
-                        }
-
-                        foreach($team in $Protections.restrictions.team) {
-                            $principal = [pscustomobject]@{
-                                ObjectIdentifier = $team.node_id
-                                ObjectType = 'GHTeam'
-                            }
-                            $RestrictionPrincipals.Add($principal)
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $team.node_id -EndId $branch.commit.sha))
-                        }
-
-                        # TODO: handle apps?
-
-                        if ($RestrictionPrincipals) {
-                            $BranchProtections | Add-Member -MemberType NoteProperty -Name "Restrictions" -Value $RestrictionPrincipals
-                            $BranchProtectionProperties["protection_push_restrictions"] = $RestrictionPrincipals.Count
-                        }
-                    }
-                    else {
-                        $BranchProtectionProperties["protection_push_restrictions"] = 0
-                    }
+                } catch {
+                    Write-Warning "Branch protetions for $($branch.name) failed with error: $_"
                 }
 
                 $props = [pscustomobject]@{
