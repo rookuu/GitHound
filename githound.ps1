@@ -127,7 +127,6 @@ function Invoke-GeneratePATForApp {
     )
 
     Add-Type -AssemblyName System.Security
-    Add-Type -AssemblyName System.IdentityModel
 
     # Current time in Unix timestamp format
     $iat = [int][double]::Parse((Get-Date -UFormat %s))
