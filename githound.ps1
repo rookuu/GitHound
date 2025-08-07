@@ -143,7 +143,7 @@ function Invoke-GeneratePATForApp {
         $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider
         
         # Remove header/footer and decode from Base64
-        $pemContent = $SigningKeyPEM -replace "-----BEGIN PRIVATE KEY-----", "" -replace "-----END PRIVATE KEY-----", "" -replace '\s', ""
+        $pemContent = $SigningKeyPEM -replace "-----BEGIN RSA PRIVATE KEY-----", "" -replace "-----END RSA PRIVATE KEY-----", "" -replace '\s', ""
         $keyBytes = [Convert]::FromBase64String($pemContent)
         
         $rsa.ImportPkcs8PrivateKey($keyBytes, [ref]$null)
