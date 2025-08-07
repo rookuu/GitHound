@@ -306,6 +306,7 @@ function Git-HoundUser
 
     foreach($user in (Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/members"))
     {
+        Write-Verbose "Fetching user details for $($user.login)"
         $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
 
         $properties = @{
