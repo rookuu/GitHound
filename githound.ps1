@@ -20,7 +20,19 @@ function New-GithubSession {
 
         [Parameter(Position=4, Mandatory = $false)]
         [HashTable]
-        $Headers = @{}
+        $Headers = @{},
+
+        [Parameter(Mandatory = $false)]
+        [int]
+        $AppId,
+
+        [Parameter(Mandatory = $false)]
+        [int]
+        $InstallationId,
+
+        [Parameter(Mandatory = $false)]
+        [string]
+        $SigningKeyPEM
     )
 
     if($Headers['Accept']) {
@@ -41,22 +53,138 @@ function New-GithubSession {
         } else {
             $Headers['User-Agent'] = $UserAgent
         }
-    } 
+    }
+
+    # Check if multiple authentication methods are provided
+    $authMethodCount = 0
+    if ($Token) { $authMethodCount++ }
+    if ($Headers['Authorization']) { $authMethodCount++ }
+    if ($AppId -and $InstallationId -and $SigningKeyPEM) { $authMethodCount++ }
+
+    if ($authMethodCount -gt 1) {
+        throw "Multiple authentication methods provided. Please use only one: Token parameter, Authorization header, or GitHub App credentials (AppId, InstallationId, and SigningKeyPEM)"
+    }
+
+    if ($authMethodCount -eq 0) {
+        throw "No authentication method provided. Please provide one of: Token parameter, Authorization header, or GitHub App credentials (AppId, InstallationId, and SigningKeyPEM)"
+    }
+
+    # Check if GitHub App credentials are partially provided
+    if (($AppId -and (!$InstallationId -or !$SigningKeyPEM)) -or 
+        ($InstallationId -and (!$AppId -or !$SigningKeyPEM)) -or 
+        ($SigningKeyPEM -and (!$AppId -or !$InstallationId))) {
+        throw "Incomplete GitHub App credentials. All three parameters are required: AppId, InstallationId, and SigningKeyPEM"
+    }
 
     if($Token) {
-        if($Headers['Authorization']) {
-            throw "Authorization header cannot be set because the Token parameter the 'Authorization' header is specified"
-        } else {
-            $Headers['Authorization'] = "Bearer $Token"
+        $Headers['Authorization'] = "Bearer $Token"
+
+        $session = [PSCustomObject]@{
+            PSTypeName = 'GitHound.Session'
+            Uri = $ApiUri
+            Headers = $Headers
+            OrganizationName = $OrganizationName
         }
     }
 
+    if ($AppId -and $InstallationId -and $SigningKeyPEM) {
+        try {
+            $generatedToken = Invoke-GeneratePATForApp -AppId $AppId -InstallationId $InstallationId -SigningKeyPEM $SigningKeyPEM
+            $Headers['Authorization'] = "Bearer $generatedToken"
+        }
+        catch {
+            throw "Failed to generate token from GitHub App credentials: $_"
+        }
 
-    [PSCustomObject]@{
-        PSTypeName = 'GitHound.Session'
-        Uri = $ApiUri
-        Headers = $Headers
-        OrganizationName = $OrganizationName
+        $session = [PSCustomObject]@{
+            PSTypeName = 'GitHound.Session'
+            Uri = $ApiUri
+            Headers = $Headers
+            OrganizationName = $OrganizationName
+            AppId = $AppId
+            InstallationId = $InstallationId
+            SigningKeyPEM = $SigningKeyPEM
+        }
+    }
+
+    Write-Verbose "GitHub session created for organization '$OrganizationName'"
+    return $session
+}
+
+function Invoke-GeneratePATForApp {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [int]
+        $AppId,
+
+        [Parameter(Mandatory=$true)]
+        [int]
+        $InstallationId,
+
+        [Parameter(Mandatory=$true)]
+        [string]
+        $SigningKeyPEM
+    )
+
+    Add-Type -AssemblyName System.Security
+    Add-Type -AssemblyName System.IdentityModel
+
+    # Current time in Unix timestamp format
+    $iat = [int][double]::Parse((Get-Date -UFormat %s))
+    $exp = $iat + 600  
+
+    $payload = @{
+        'iat' = $iat
+        'exp' = $exp
+        'iss' = $AppId
+    } | ConvertTo-Json -Compress
+
+    # Create JWT using RS256 algorithm
+    try {
+        $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider
+        
+        # Remove header/footer and decode from Base64
+        $pemContent = $SigningKeyPEM -replace "-----BEGIN PRIVATE KEY-----", "" -replace "-----END PRIVATE KEY-----", "" -replace '\s', ""
+        $keyBytes = [Convert]::FromBase64String($pemContent)
+        
+        $rsa.ImportPkcs8PrivateKey($keyBytes, [ref]$null)
+        
+        $header = @{
+            'alg' = 'RS256'
+            'typ' = 'JWT'
+        } | ConvertTo-Json -Compress
+        
+        $headerBase64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($header)) -replace '\+', '-' -replace '/', '_' -replace '='
+        $payloadBase64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($payload)) -replace '\+', '-' -replace '/', '_' -replace '='
+        
+        $toSign = [System.Text.Encoding]::UTF8.GetBytes("$headerBase64.$payloadBase64")
+        $signature = $rsa.SignData($toSign, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+        $signatureBase64 = [Convert]::ToBase64String($signature) -replace '\+', '-' -replace '/', '_' -replace '='
+        
+        $jwt = "$headerBase64.$payloadBase64.$signatureBase64"
+    }
+    catch {
+        throw "Failed to create JWT: $_"
+    }
+
+    $headers = @{
+        'Accept' = 'application/vnd.github+json'
+        'Authorization' = "Bearer $jwt"
+        'X-GitHub-Api-Version' = '2022-11-28'
+    }
+
+    # Request installation access token
+    try {
+        $response = Invoke-RestMethod -Uri "https://api.github.com/app/installations/$InstallationId/access_tokens" `
+                                     -Method Post `
+                                     -Headers $headers `
+                                     -ErrorAction Stop
+
+        return $response.token
+    }
+    catch {
+        Write-Error "Failed to get installation token: $_"
+        throw
     }
 }
 
@@ -73,7 +201,11 @@ function Invoke-GithubRestMethod {
 
         [Parameter()]
         [string]
-        $Method = 'GET'
+        $Method = 'GET',
+
+        [Parameter()]
+        [switch]
+        $TokenRenewalAttempted
     )
 
     $LinkHeader = $Null;
@@ -82,8 +214,8 @@ function Invoke-GithubRestMethod {
             if($LinkHeader) {
                 $Response = Invoke-WebRequest -Uri "$LinkHeader" -Headers $Session.Headers -Method Get -ErrorAction Stop
             } else {
-                Write-Verbose "https://api.github.com/$($Path)"
-                $Response = Invoke-WebRequest -Uri "$($Session.Uri)$($Path)" -Headers $Session.Headers -Method Get -ErrorAction Stop
+                Write-Verbose "$($Session.Uri)$($Path)"
+                $Response = Invoke-WebRequest -Uri "$($Session.Uri)$($Path)" -Headers $Session.Headers -Method $Method -ErrorAction Stop
             }
 
             $Response.Content | ConvertFrom-Json | ForEach-Object { $_ }
@@ -101,7 +233,29 @@ function Invoke-GithubRestMethod {
 
         } while($LinkHeader)
     } catch {
-        Write-Error $_
+        # Check if this is a 401 Unauthorized error (maybe token expired)
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 401 -and 
+            $Session.AppId -and 
+            $Session.InstallationId -and 
+            $Session.SigningKeyPEM -and 
+            -not $TokenRenewalAttempted) {
+            
+            Write-Verbose "Received 401 Unauthorized, attempting to regenerate token..."
+            try {
+                $newToken = Invoke-GeneratePATForApp -AppId $Session.AppId -InstallationId $Session.InstallationId -SigningKeyPEM $Session.SigningKeyPEM
+                $Session.Headers['Authorization'] = "Bearer $newToken"
+                
+                # Retry the request with the new token
+                return Invoke-GithubRestMethod -Session $Session -Path $Path -Method $Method -TokenRenewalAttempted
+            }
+            catch {
+                Write-Error "Failed to regenerate PAT after 401 error: $_"
+                throw
+            }
+        }
+        else {
+            Write-Error $_
+        }
     }
 } 
 
