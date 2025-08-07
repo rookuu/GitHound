@@ -311,6 +311,7 @@ function Git-HoundUser
         try {
             $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
         } catch {
+            Write-Verbose "User $($user.login) could not be found via api"
             continue
         }
 
