@@ -307,7 +307,12 @@ function Git-HoundUser
     foreach($user in (Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/members"))
     {
         Write-Verbose "Fetching user details for $($user.login)"
-        $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
+
+        try {
+            $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
+        } catch {
+            continue
+        }
 
         $properties = @{
             id                  = Normalize-Null $user.id
@@ -323,6 +328,7 @@ function Git-HoundUser
             type                = Normalize-Null $user.type
             site_admin          = Normalize-Null $user.site_admin
         }
+        
         $null = $nodes.Add((New-GitHoundNode -Id $user.node_id -Kind 'GHUser' -Properties $properties))
     }
 
