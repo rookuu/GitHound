@@ -130,7 +130,7 @@ function Invoke-GeneratePATForApp {
 
     # Current time in Unix timestamp format
     $iat = [int][double]::Parse((Get-Date -UFormat %s))
-    $exp = $iat + 600  
+    $exp = $iat + 300  
 
     $payload = @{
         'iat' = $iat
@@ -286,7 +286,11 @@ function Invoke-GitHubGraphQL
 
         [Parameter()]
         [hashtable]
-        $Variables
+        $Variables,
+
+        [Parameter()]
+        [switch]
+        $TokenRenewalAttempted
     )
 
     $Body = @{
@@ -301,7 +305,32 @@ function Invoke-GitHubGraphQL
         Body = $Body
     }
 
-    Invoke-RestMethod @fparams
+    Write-Verbose "$($Uri)"
+
+    try {
+        Invoke-RestMethod @fparams
+    } catch { 
+        # Check if this is a 401 Unauthorized error (maybe token expired)
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 401 -and 
+            -not $TokenRenewalAttempted) {
+            
+            Write-Verbose "Received 401 Unauthorized, attempting to regenerate token..."
+            try {
+                $newToken = Invoke-GeneratePATForApp -AppId $Session.AppId -InstallationId $Session.InstallationId -SigningKeyPEM $Session.SigningKeyPEM
+                $Headers['Authorization'] = "Bearer $newToken"
+                
+                # Retry the request with the new token
+                return Invoke-GitHubGraphQL -Uri $Uri -Headers $Headers -Query $Query -Variables $Variables -TokenRenewalAttempted
+            }
+            catch {
+                Write-Error "Failed to regenerate PAT after 401 error: $_"
+                throw
+            }
+        }
+        else {
+            Write-Error $_
+        }
+    }
 }
 
 function New-GitHoundNode
