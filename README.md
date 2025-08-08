@@ -130,15 +130,15 @@ Nodes correspond to each object type.
 
 | Node                                                                     | Description                                                                                    | Icon        | Color   |
 |--------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------|---------|
-| <img src="./images/black_GHOrganization.svg" width="30"/> GHOrganization | A GitHub Organization—top‑level container for repositories, teams, & settings.               | building    | #5FED83 |
-| <img src="./images/black_GHUser.svg" width="30"/> GHUser                 | An individual GitHub user account.                                                             | user        | #FF8E40 |
-| <img src="./images/black_GHTeam.svg" width="30"/> GHTeam                 | A team within an organization, grouping users for shared access and collaboration.             | user-group  | #C06EFF |
-| <img src="./images/black_GHRepository.svg" width="30"/> GHRepository     | A code repository in an organization (or user account), containing files, issues, etc.         | box-archive | #9EECFF |
-| <img src="./images/black_GHBranch.svg" width="30"/> GHBranch             | A named reference in a repository (e.g. `main`, `develop`) representing a line of development. | code-branch | #FF80D2 |
-| <img src="./images/black_GHOrgRole.svg" width="30"/> GHOrgRole           | The role a user has at the organization level (e.g. `admin`, `member`).                        | user-tie    | #BFFFD1 |
-| <img src="./images/black_GHTeamRole.svg" width="30"/> GHTeamRole         | The role a user has within a team (e.g. `maintainer`, `member`).                               | user-tie    | #D0B0FF |
-| <img src="./images/black_GHRepoRole.svg" width="30"/> GHRepoRole         | The permission granted to a user or team on a repository (e.g. `admin`, `write`, `read`).      | user-tie    | #DEFEFA |
-| <img src="./images/black_GHSecretScanningAlert.svg" width="30"/> GHSecretScanningAlert | A component of GitHub Advanced Security to notify organizations when a secret is accidentally included in a repo's contents | key | #3C7A6E |
+| <img src="./images/black_GHOrganization.png" width="30"/> GHOrganization | A GitHub Organization—top‑level container for repositories, teams, & settings.               | building    | #5FED83 |
+| <img src="./images/black_GHUser.png" width="30"/> GHUser                 | An individual GitHub user account.                                                             | user        | #FF8E40 |
+| <img src="./images/black_GHTeam.png" width="30"/> GHTeam                 | A team within an organization, grouping users for shared access and collaboration.             | user-group  | #C06EFF |
+| <img src="./images/black_GHRepository.png" width="30"/> GHRepository     | A code repository in an organization (or user account), containing files, issues, etc.         | box-archive | #9EECFF |
+| <img src="./images/black_GHBranch.png" width="30"/> GHBranch             | A named reference in a repository (e.g. `main`, `develop`) representing a line of development. | code-branch | #FF80D2 |
+| <img src="./images/black_GHOrgRole.png" width="30"/> GHOrgRole           | The role a user has at the organization level (e.g. `admin`, `member`).                        | user-tie    | #BFFFD1 |
+| <img src="./images/black_GHTeamRole.png" width="30"/> GHTeamRole         | The role a user has within a team (e.g. `maintainer`, `member`).                               | user-tie    | #D0B0FF |
+| <img src="./images/black_GHRepoRole.png" width="30"/> GHRepoRole         | The permission granted to a user or team on a repository (e.g. `admin`, `write`, `read`).      | user-tie    | #DEFEFA |
+| <img src="./images/black_GHSecretScanningAlert.png" width="30"/> GHSecretScanningAlert | A component of GitHub Advanced Security to notify organizations when a secret is accidentally included in a repo's contents | key | #3C7A6E |
 
 ### Edges
 
