@@ -1097,7 +1097,7 @@ function Invoke-GitHound
 
     $org = Git-HoundOrganization -Session $Session
     $nodes.Add($org) | Out-Null
-<#
+
     $users = $org | Git-HoundUser -Session $Session
     if($users) { $nodes.AddRange(@($users)) }
 
@@ -1124,7 +1124,7 @@ function Invoke-GitHound
     $reporoles = $org | Git-HoundRepositoryRole -Session $Session
     if($reporoles.nodes) { $nodes.AddRange(@($reporoles.nodes)) }
     if($reporoles.edges) { $edges.AddRange(@($reporoles.edges)) }
-    #>
+    
     $secretalerts = $org | Git-HoundSecretScanningAlert -Session $Session
     if($secretalerts.nodes) { $nodes.AddRange(@($secretalerts.nodes)) }
     if($secretalerts.edges) { $edges.AddRange(@($secretalerts.edges)) }
