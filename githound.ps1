@@ -138,6 +138,9 @@ function Invoke-GeneratePATForApp {
         'iss' = $AppId
     } | ConvertTo-Json -Compress
 
+    Write-Verbose "Creating JWT for AppId $AppId with InstallationId $InstallationId"
+    Write-Verbose "JWT Payload: $payload"
+
     # Create JWT using RS256 algorithm
     try {
         $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider
