@@ -948,6 +948,53 @@ function Git-HoundRepositoryRole
     Write-Output $output
 }
 
+# Inspired by https://github.com/SpecterOps/GitHound/issues/3
+function Git-HoundSecretScanningAlert
+{
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [PSTypeName('GitHound.Session')]
+        $Session,
+
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
+        [PSObject]
+        $Organization
+    )
+
+    $nodes = New-Object System.Collections.ArrayList
+    $edges = New-Object System.Collections.ArrayList
+
+    foreach($alert in (Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/secret-scanning/alerts"))
+    {
+        $alertId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("SSA_$($Organization.id)_$($alert.repository.node_id)_$($alert.number)"))
+        $properties = @{
+            id                       = Normalize-Null $alertId
+            name                     = Normalize-Null $alert.number
+            repository_name          = Normalize-Null $alert.repository.name
+            repository_id            = Normalize-Null $alert.repository.node_id
+            repository_url           = Normalize-Null $alert.repository.html_url
+            secret_type              = Normalize-Null $alert.secret_type
+            secret_type_display_name = Normalize-Null $alert.secret_type_display_name
+            validity                 = Normalize-Null $alert.validity
+            state                    = Normalize-Null $alert.state
+            created_at               = Normalize-Null $alert.created_at
+            updated_at               = Normalize-Null $alert.updated_at
+            url                      = Normalize-Null $alert.html_url
+        }
+
+        $null = $nodes.Add((New-GitHoundNode -Id $alertId -Kind 'GHSecretScanningAlert' -Properties $properties))
+        $null = $edges.Add((New-GitHoundEdge -Kind 'GHHasSecretScanningAlert' -StartId $alert.repository.node_id -EndId $alertId))
+    }
+
+    $output = [PSCustomObject]@{
+        Nodes = $nodes
+        Edges = $edges
+    }
+
+    Write-Output $output
+}
+
 function Git-HoundGraphQlSamlProvider
 {
     Param(
@@ -1050,7 +1097,7 @@ function Invoke-GitHound
 
     $org = Git-HoundOrganization -Session $Session
     $nodes.Add($org) | Out-Null
-
+<#
     $users = $org | Git-HoundUser -Session $Session
     if($users) { $nodes.AddRange(@($users)) }
 
@@ -1077,6 +1124,10 @@ function Invoke-GitHound
     $reporoles = $org | Git-HoundRepositoryRole -Session $Session
     if($reporoles.nodes) { $nodes.AddRange(@($reporoles.nodes)) }
     if($reporoles.edges) { $edges.AddRange(@($reporoles.edges)) }
+    #>
+    $secretalerts = $org | Git-HoundSecretScanningAlert -Session $Session
+    if($secretalerts.nodes) { $nodes.AddRange(@($secretalerts.nodes)) }
+    if($secretalerts.edges) { $edges.AddRange(@($secretalerts.edges)) }
 
     $saml = Git-HoundGraphQlSamlProvider -Session $Session
     if($saml) { $edges.AddRange(@($saml)) }
