@@ -306,7 +306,14 @@ function Git-HoundUser
 
     foreach($user in (Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/members"))
     {
-        $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
+        Write-Verbose "Fetching user details for $($user.login)"
+
+        try {
+            $user_details = Invoke-GithubRestMethod -Session $Session -Path "user/$($user.id)"
+        } catch {
+            Write-Verbose "User $($user.login) could not be found via api"
+            continue
+        }
 
         $properties = @{
             id                  = Normalize-Null $user.id
@@ -322,6 +329,7 @@ function Git-HoundUser
             type                = Normalize-Null $user.type
             site_admin          = Normalize-Null $user.site_admin
         }
+        
         $null = $nodes.Add((New-GitHoundNode -Id $user.node_id -Kind 'GHUser' -Properties $properties))
     }
 
