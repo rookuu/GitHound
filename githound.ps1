@@ -159,7 +159,7 @@ function New-GitHoundNode
         $Id,
 
         [Parameter(Position = 1, Mandatory = $true)]
-        [String[]]
+        [String]
         $Kind,
 
         [Parameter(Position = 2, Mandatory = $true)]
@@ -169,7 +169,7 @@ function New-GitHoundNode
 
     $props = [pscustomobject]@{
         id = $Id
-        kinds = @($Kind, 'GHBase')
+        kinds = @($Kind)
         properties = $Properties
     }
 
@@ -189,32 +189,53 @@ function New-GitHoundEdge
 
         [Parameter(Position = 2, Mandatory = $true)]
         [PSObject]
-        $EndId
+        $EndId,
 
-        <#
+        [Parameter(Mandatory = $false)]
+        [String]
+        $StartKind,
+        
         [Parameter(Mandatory = $false)]
         [ValidateSet('id', 'name')]
         [String]
         $StartMatchBy = 'id',
 
         [Parameter(Mandatory = $false)]
+        [String]
+        $EndKind,
+
+        [Parameter(Mandatory = $false)]
         [ValidateSet('id', 'name')]
         [String]
         $EndMatchBy = 'id'
-        #>
     )
 
-    $edge = [PSCustomObject]@{
+    $edge = @{
         kind = $Kind
-        start = [PSCustomObject]@{
-            #match_by = $StartMatchBy
+        start = @{
             value = $StartId
         }
-        end = [PSCustomObject]@{
-            #match_by = $EndMatchBy
+        end = @{
             value = $EndId
         }
         properties = @{}
+    }
+
+    if($PSBoundParameters.ContainsKey('StartKind')) 
+    {
+        $edge.start.Add('kind', $StartKind)
+    }
+    if($PSBoundParameters.ContainsKey('StartMatchBy')) 
+    {
+        $edge.start.Add('match_by', $StartMatchBy)
+    }
+    if($PSBoundParameters.ContainsKey('EndKind'))
+    {
+        $edge.end.Add('kind', $EndKind)
+    }
+    if($PSBoundParameters.ContainsKey('EndMatchBy')) 
+    {
+        $edge.end.Add('match_by', $EndMatchBy)
     }
 
     Write-Output $edge
@@ -464,49 +485,29 @@ function Git-HoundBranch
                 {
                     $Protections = Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.Properties.full_name)/branches/$($branch.name)/protection"
 
-                    <#
-                    $protections = [pscustomobject]@{
-                        protection_enforce_admins = $Protections.enforce_admins.enabled
-                        protection_lock_branch = $Protections.lock_branch.enabled
-                    }
-                    #>
+                    $protection_enforce_admins = $Protections.enforce_admins.enabled
+                    $protection_lock_branch = $Protections.lock_branch.enabled
 
-                    #$BranchProtections | Add-Member -MemberType NoteProperty -Name "EnforceAdmins" -Value $Protections.enforce_admins.enabled
-                    #$BranchProtections | Add-Member -MemberType NoteProperty -Name "LockBranch" -Value $Protections.lock_branch.enabled
-                    $BranchProtectionProperties["protection_enforce_admins"] = $Protections.enforce_admins.enabled
-                    $BranchProtectionProperties["protection_lock_branch"] = $Protections.lock_branch.enabled
-
+                    # Check for Pull Request Reviews
+                    # pull requests are required before merging
                     if ($Protections.required_pull_request_reviews) {
-                        # pull requests are required before merging
-
-                        $BranchProtectionProperties["protection_required_pull_request_reviews"] = $False
                         
-                        #$BranchProtections | Add-Member -MemberType NoteProperty -Name "RequiredApprovingReviewCount" -Value $Protections.required_pull_request_reviews.required_approving_review_count
-                        #$BranchProtections | Add-Member -MemberType NoteProperty -Name "RequireCodeOwnerReviews" -Value $Protections.required_pull_request_reviews.require_code_owner_reviews
-                        #$BranchProtections | Add-Member -MemberType NoteProperty -Name "RequireLastPushApproval" -Value $Protections.required_pull_request_reviews.require_last_push_approval
+                        $protection_required_pull_request_reviews = $False
+                        
+                        $protection_required_approving_review_count = $Protections.required_pull_request_reviews.required_approving_review_count
                         if ($Protections.required_pull_request_reviews.required_approving_review_count) {
-                            $BranchProtectionProperties["protection_required_approving_review_count"] = $Protections.required_pull_request_reviews.required_approving_review_count
-                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
-                        }
-                        else {
-                            $BranchProtectionProperties["protection_required_approving_review_count"] = 0
-                        }
-                        if ($Protections.required_pull_request_reviews.require_code_owner_reviews > 0) {
-                            $BranchProtectionProperties["protection_require_code_owner_reviews"] = $Protections.required_pull_request_reviews.require_code_owner_reviews
-                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
-                        }
-                        else {
-                            $BranchProtectionProperties["protection_require_code_owner_reviews"] = $False
-                        }
-                        if ($Protections.required_pull_request_reviews.require_last_push_approval) {
-                            $BranchProtectionProperties["protection_require_last_push_approval"] = $Protections.required_pull_request_reviews.require_last_push_approval
-                            $BranchProtectionProperties["protection_required_pull_request_reviews"] = $True
-                        }
-                        else {
-                            $BranchProtectionProperties["protection_require_last_push_approval"] = $False
+                            $protection_required_pull_request_reviews = $True
                         }
 
-                        $BypassPrincipals = [System.Collections.Generic.List[pscustomobject]]::new()
+                        $protection_require_code_owner_reviews = $Protections.required_pull_request_reviews.require_code_owner_reviews
+                        if ($Protections.required_pull_request_reviews.require_code_owner_reviews) {
+                            $protection_required_pull_request_reviews = $True
+                        }
+
+                        $protection_require_last_push_approval = $Protections.required_pull_request_reviews.require_last_push_approval
+                        if ($Protections.required_pull_request_reviews.require_last_push_approval) {
+                            $protection_required_pull_request_reviews = $True
+                        }
 
                         # We need an edge here
                         foreach($user in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.users) {
@@ -519,21 +520,27 @@ function Git-HoundBranch
                         }
 
                         # TODO: handle apps?
+                        foreach($app in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.apps) {
+                            #$null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $app.node_id -EndId $branch.commit.sha))
+                        }
 
+                        # We replaced BypassPrincipals with the above edges
+                        # Do we still need this value or is it implied by the edges?
+                        <#
                         if ($BypassPrincipals) {
-                            #$BranchProtections | Add-Member -MemberType NoteProperty -Name "BypassPullRequestAllowances" -Value $BypassPrincipals
-                            $BranchProtectionProperties["protection_bypass_pull_request_allowances"] = $BypassPrincipals.Count
+                            $protection_bypass_pull_request_allowances = $BypassPrincipals.Count
                         }
                         else {
-                            $BranchProtectionProperties["protection_bypass_pull_request_allowances"] = 0
+                            $protection_bypass_pull_request_allowances = 0
                         }
+                        #>
                     }
                     else {
-                        $BranchProtectionProperties["protection_required_pull_request_reviews"] = $False
+                        $protection_required_pull_request_reviews = $false
                     }
 
+                    # Check for restrictions
                     if ($Protections.restrictions) {
-                        $RestrictionPrincipals = [System.Collections.Generic.List[pscustomobject]]::new()
                         foreach($user in $Protections.restrictions.users) {
                             $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $user.node_id -EndId $branch.commit.sha))
                         }
@@ -543,35 +550,56 @@ function Git-HoundBranch
                         }
 
                         # TODO: handle apps?
-
-                        if ($RestrictionPrincipals) {
-                            #$BranchProtections | Add-Member -MemberType NoteProperty -Name "Restrictions" -Value $RestrictionPrincipals
-                            $BranchProtectionProperties["protection_push_restrictions"] = $RestrictionPrincipals.Count
+                        foreach($app in $Protections.restrictions.apps) {
+                            #$null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $app.node_id -EndId $branch.commit.sha))
                         }
+
+                        # Same question as BypassPrincipals
+                        # Do we still need this value or is it implied by the edges?
+                        <#
+                        if ($RestrictionPrincipals) {
+                            $protection_push_restrictions = $RestrictionPrincipals.Count
+                        }
+                        #>
                     }
                     else {
-                        $BranchProtectionProperties["protection_push_restrictions"] = 0
+                        $protection_push_restrictions = 0
                     }
                 }
                 else 
                 {
                     # Here we just set all of the protection properties to false
-
+                    $protection_enforce_admins = $false
+                    $protection_lock_branch = $false
+                    $protection_required_pull_request_reviews = $false
+                    $protection_required_approving_review_count = 0
+                    $protection_require_code_owner_reviews = $false
+                    $protection_require_last_push_approval = $false
+                    #$protection_bypass_pull_request_allowances = 0
+                    #$protection_push_restrictions = 0
                 }
 
                 $props = [pscustomobject]@{
-                    organization    = Normalize-Null $repo.properties.organization_name
-                    organization_id = Normalize-Null $repo.properties.organization_id
-                    short_name      = Normalize-Null $branch.name
-                    name            = Normalize-Null "$($repo.properties.name)\$($branch.name)"
-                    commit_hash     = Normalize-Null $branch.commit.sha
-                    commit_url      = Normalize-Null $branch.commit.url
-                    protected       = Normalize-Null $branch.protected
+                    organization                               = Normalize-Null $repo.properties.organization_name
+                    organization_id                            = Normalize-Null $repo.properties.organization_id
+                    short_name                                 = Normalize-Null $branch.name
+                    name                                       = Normalize-Null "$($repo.properties.name)\$($branch.name)"
+                    commit_hash                                = Normalize-Null $branch.commit.sha
+                    commit_url                                 = Normalize-Null $branch.commit.url
+                    protected                                  = Normalize-Null $branch.protected
+                    protection_enforce_admins                  = Normalize-Null $protection_enforce_admins
+                    protection_lock_branch                     = Normalize-Null $protection_lock_branch
+                    protection_required_pull_request_reviews   = Normalize-Null $protection_required_pull_request_reviews
+                    protection_required_approving_review_count = Normalize-Null $protection_required_approving_review_count
+                    protection_require_code_owner_reviews      = Normalize-Null $protection_require_code_owner_reviews
+                    protection_require_last_push_approval      = Normalize-Null $protection_require_last_push_approval
+                    #protection_bypass_pull_request_allowances  = Normalize-Null $protection_bypass_pull_request_allowances
+                    #protection_push_restrictions               = Normalize-Null $protection_push_restrictions
                 }
 
-                #foreach ($BranchProtectionProperty in $BranchProtectionProperties.GetEnumerator()) {
-                #    $props | Add-Member -MemberType NoteProperty -Name $BranchProtectionProperty.Key -Value $BranchProtectionProperty.Value
-                #}
+                foreach ($BranchProtectionProperty in $BranchProtectionProperties.GetEnumerator()) {
+                    $props | Add-Member -MemberType NoteProperty -Name $BranchProtectionProperty.Key -Value $BranchProtectionProperty.Value
+                }
 
                 $null = $nodes.Add((New-GitHoundNode -Id $branch.commit.sha -Kind GHBranch -Properties $props))
                 $null = $edges.Add((New-GitHoundEdge -Kind GHHasBranch -StartId $repo.id -EndId $branch.commit.sha))
@@ -1105,6 +1133,50 @@ function Git-HoundSecretScanningAlert
     Write-Output $output
 }
 
+function Git-HoundAppInstallation
+{
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [PSTypeName('GitHound.Session')]
+        $Session,
+
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
+        [PSObject]
+        $Organization
+    )
+
+    $nodes = New-Object System.Collections.ArrayList
+    $edges = New-Object System.Collections.ArrayList
+
+    foreach($app in (Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/installations").installations)
+    {
+        $properties = @{
+            id                   = Normalize-Null $app.client_id
+            name                 = Normalize-Null $app.app_slug
+            repository_selection = Normalize-Null $app.repository_selection
+            access_tokens_url    = Normalize-Null $app.access_tokens_url
+            repositories_url     = Normalize-Null $app.repositories_url
+            description          = Normalize-Null $app.description
+            html_url             = Normalize-Null $app.html_url
+            created_at           = Normalize-Null $app.created_at
+            updated_at           = Normalize-Null $app.updated_at
+            organization_name    = Normalize-Null $app.account.login
+            organization_id      = Normalize-Null $app.account.node_id
+            #permissions          = Normalize-Null ($app.permissions | ConvertTo-Json -Depth 10)
+            #events               = Normalize-Null ($app.events | ConvertTo-Json -Depth 10)
+        }
+
+        $null = $nodes.Add((New-GitHoundNode -Id $app.client_id -Kind 'GHAppInstallation' -Properties $properties))
+        $null = $edges.Add((New-GitHoundEdge -Kind 'GHContains' -StartId $app.account.node_id -EndId $app.client_id))
+    }
+
+    Write-Output ([PSCustomObject]@{
+        Nodes = $nodes
+        Edges = $edges
+    })
+}
+
 # This is a second order data type after GHOrganization
 function Git-HoundGraphQlSamlProvider
 {
@@ -1176,6 +1248,7 @@ query SAML($login: String!, $count: Int = 100, $after: String = null) {
     do{
         $result = Invoke-GitHubGraphQL -Headers $Session.Headers -Query $Query -Variables $Variables
 
+        # One issue with this approach is in cases where the IdP has changed and old external identities are still present, the issuer may not match the current IdP
         switch -Wildcard ($result.data.organization.samlIdentityProvider.issuer)
         {
             'https://auth.pingone.com/*' {
@@ -1185,8 +1258,7 @@ query SAML($login: String!, $count: Int = 100, $after: String = null) {
                     {
                         if($attribute.name -eq 'NameID')
                         {
-                            # I need to update New-GitHoundEdge to support MatchByName
-                            $null = $edges.Add((New-GitHoundEdge -Kind SyncedToGHUser -StartId $attribute.value -EndId $identity.user.id))
+                            $null = $edges.Add((New-GitHoundEdge -Kind SyncedToGHUser -StartId $attribute.value -StartKind PingOneUser -StartMatchBy name -EndId $identity.user.id -EndKind GHUser))
                         }
                     }
                 }
@@ -1199,12 +1271,12 @@ query SAML($login: String!, $count: Int = 100, $after: String = null) {
                     {
                         if($attribute.name -eq 'http://schemas.microsoft.com/identity/claims/objectidentifier')
                         {
-                            $null = $edges.Add((New-GitHoundEdge -Kind SyncedToGHUser -StartId $attribute.value -EndId $identity.user.id))
+                            $null = $edges.Add((New-GitHoundEdge -Kind SyncedToGHUser -StartId $attribute.value -StartKind AZUser -EndId $identity.user.id -EndKind GHUser))
                         }
                     }
                 }
             }
-            default { Write-Verbose "Issue: $($_)" }
+            default { Write-Verbose "Issuer: $($_)" }
         }
 
         $Variables['after'] = $result.data.organization.samlIdentityProvider.externalIdentities.pageInfo.endCursor
@@ -1223,8 +1295,8 @@ function Invoke-GitHound
         $Session
     )
 
-    $edges = New-Object System.Collections.ArrayList
     $nodes = New-Object System.Collections.ArrayList
+    $edges = New-Object System.Collections.ArrayList
 
     Write-Host "[*] Starting Git-Hound for $($Session.OrganizationName)"
     $org = Git-HoundOrganization -Session $Session
@@ -1269,9 +1341,10 @@ function Invoke-GitHound
     if($secretalerts.nodes) { $nodes.AddRange(@($secretalerts.nodes)) }
     if($secretalerts.edges) { $edges.AddRange(@($secretalerts.edges)) }
 
-    Write-Host "[*] Enumerating SAML Identity Provider"
-    $saml = Git-HoundGraphQlSamlProvider -Session $Session
-    if($saml) { $edges.AddRange(@($saml)) }
+    #Write-Host "[*] Enumerating App Installations"
+    #$appInstallations = $org | Git-HoundAppInstallation -Session $Session
+    #if($appInstallations.nodes) { $nodes.AddRange(@($appInstallations.nodes)) }
+    #if($appInstallations.edges) { $edges.AddRange(@($appInstallations.edges)) }
 
     Write-Host "[*] Converting to OpenGraph JSON Payload"
     $payload = [PSCustomObject]@{
@@ -1283,6 +1356,18 @@ function Invoke-GitHound
             edges = $edges.ToArray()
         }
     } | ConvertTo-Json -Depth 10 | Out-File -FilePath "./githound_$($org.id).json"
+
+    Write-Host "[*] Enumerating SAML Identity Provider"
+    $samlEdges = New-Object System.Collections.ArrayList
+    $saml = Git-HoundGraphQlSamlProvider -Session $Session
+    if($saml) { $samlEdges.AddRange(@($saml)) }
+
+    $payload = [PSCustomObject]@{
+        graph = [PSCustomObject]@{
+            nodes = @()
+            edges = $samlEdges.ToArray()
+        }
+    } | ConvertTo-Json -Depth 10 | Out-File -FilePath "./githound_saml_$($org.id).json"
 
     #$payload | BHDataUploadJSON
 }
