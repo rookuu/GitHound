@@ -579,11 +579,15 @@ function Git-HoundBranch
                     #$protection_push_restrictions = 0
                 }
 
+
+                $branchId = [System.BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$($repo.properties.organization_id)_$($repo.properties.full_name)_$($branch.name)"))).Replace('-', '')
+
                 $props = [pscustomobject]@{
                     organization                               = Normalize-Null $repo.properties.organization_name
                     organization_id                            = Normalize-Null $repo.properties.organization_id
                     short_name                                 = Normalize-Null $branch.name
                     name                                       = Normalize-Null "$($repo.properties.name)\$($branch.name)"
+                    id                                         = Normalize-Null $branchId
                     commit_hash                                = Normalize-Null $branch.commit.sha
                     commit_url                                 = Normalize-Null $branch.commit.url
                     protected                                  = Normalize-Null $branch.protected
@@ -601,8 +605,8 @@ function Git-HoundBranch
                     $props | Add-Member -MemberType NoteProperty -Name $BranchProtectionProperty.Key -Value $BranchProtectionProperty.Value
                 }
 
-                $null = $nodes.Add((New-GitHoundNode -Id $branch.commit.sha -Kind GHBranch -Properties $props))
-                $null = $edges.Add((New-GitHoundEdge -Kind GHHasBranch -StartId $repo.id -EndId $branch.commit.sha))
+                $null = $nodes.Add((New-GitHoundNode -Id $branchId -Kind GHBranch -Properties $props))
+                $null = $edges.Add((New-GitHoundEdge -Kind GHHasBranch -StartId $repo.id -EndId $branchId))
             }
         } -ThrottleLimit 25
     }
