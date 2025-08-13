@@ -1,31 +1,10 @@
 {
   "custom_types": {
-    "GHOrganization": {
+    "GHAppInstallation": {
       "icon": {
         "type": "font-awesome",
-        "name": "building",
-        "color": "#5FED83"
-      }
-    },
-    "GHUser": {
-      "icon": {
-        "type": "font-awesome",
-        "name": "user",
-        "color": "#FF8E40"
-      }
-    },
-    "GHTeam": {
-      "icon": {
-        "type": "font-awesome",
-        "name": "user-group",
-        "color": "#C06EFF"
-      }
-    },
-    "GHRepository": {
-      "icon": {
-        "type": "font-awesome",
-        "name": "box-archive",
-        "color": "#9EECFF"
+        "name": "window-restore",
+        "color": "#EFC41D"
       }
     },
     "GHBranch": {
@@ -35,11 +14,46 @@
         "color": "#FF80D2"
       }
     },
+    "GHOrganization": {
+      "icon": {
+        "type": "font-awesome",
+        "name": "building",
+        "color": "#5FED83"
+      }
+    },
     "GHOrgRole": {
       "icon": {
         "type": "font-awesome",
         "name": "user-tie",
         "color": "#BFFFD1"
+      }
+    },
+    "GHRepository": {
+      "icon": {
+        "type": "font-awesome",
+        "name": "box-archive",
+        "color": "#9EECFF"
+      }
+    },
+    "GHRepoRole": {
+      "icon": {
+        "type": "font-awesome",
+        "name": "user-tie",
+        "color": "#DEFEFA"
+      }
+    },
+    "GHSecretScanningAlert": {
+      "icon": {
+        "type": "font-awesome",
+        "name": "key",
+        "color": "#3C7A6E"
+      }
+    },
+    "GHTeam": {
+      "icon": {
+        "type": "font-awesome",
+        "name": "user-group",
+        "color": "#C06EFF"
       }
     },
     "GHTeamRole": {
@@ -49,11 +63,11 @@
         "color": "#D0B0FF"
       }
     },
-    "GHRepoRole": {
+    "GHUser": {
       "icon": {
         "type": "font-awesome",
-        "name": "user-tie",
-        "color": "#DEFEFA"
+        "name": "user",
+        "color": "#FF8E40"
       }
     }
   }
