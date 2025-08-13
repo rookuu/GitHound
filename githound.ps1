@@ -887,7 +887,7 @@ function Git-HoundBranch {
             }
             catch {
                 Write-Warning "Failed to fetch branches for $($repo.properties.full_name) - $_"
-                continue
+                throw $_
             }
         } -ThrottleLimit 25
     }
