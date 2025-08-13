@@ -339,7 +339,27 @@ function Invoke-GitHubGraphQL
         }
         catch {
             $httpException = $_.ErrorDetails | ConvertFrom-Json
-            if (($httpException.status -eq "403" -and $httpException.message -match "rate limit") -or $httpException.status -eq "429") {
+
+            if ($httpException.status -eq "401" -and 
+                  $Session.AppId -and 
+                  $Session.InstallationId -and 
+                  $Session.SigningKeyPEM -and 
+                  -not $TokenRenewalAttempted) {
+            
+                  Write-Verbose "Received 401 Unauthorized, attempting to regenerate token..."
+                  try {
+                      $newToken = Invoke-GeneratePATForApp -AppId $Session.AppId -InstallationId $Session.InstallationId -SigningKeyPEM $Session.SigningKeyPEM
+                      $Session.Headers['Authorization'] = "Bearer $newToken"
+
+                      # Retry the request with the new token
+                      return Invoke-GitHubGraphQL -Session $Session -Uri $Uri -Headers $Session.Headers -Query $Query -Variables $Variables -TokenRenewalAttempted $true
+                  }
+                  catch {
+                      Write-Error "Failed to regenerate PAT after 401 error: $_"
+                      throw
+                  }
+            }
+            elseif (($httpException.status -eq "403" -and $httpException.message -match "rate limit") -or $httpException.status -eq "429") {
                 Write-Warning "Rate limit hit when doing GraphQL call. Retry $($retryCount + 1)/3"
                 Write-Debug $_
                 Wait-GithubGraphQlRateLimit -Session $Session
@@ -734,137 +754,144 @@ function Git-HoundBranch
             $repo = $_
 
             Write-Verbose "Fetching branches for $($repo.properties.full_name)"
-            foreach($branch in (Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.properties.full_name)/branches"))
-            {    
-                #$BranchProtections = [pscustomobject]@{}
-                $BranchProtectionProperties = [ordered]@{}
-                
-                if ($branch.protection.enabled -and $branch.protection_url) 
-                {
-                    $Protections = Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.Properties.full_name)/branches/$($branch.name)/protection"
 
-                    $protection_enforce_admins = $Protections.enforce_admins.enabled
-                    $protection_lock_branch = $Protections.lock_branch.enabled
+            try {
+                foreach($branch in (Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.properties.full_name)/branches"))
+                {    
+                    #$BranchProtections = [pscustomobject]@{}
+                    $BranchProtectionProperties = [ordered]@{}
+                    
+                    if ($branch.protection.enabled -and $branch.protection_url) 
+                    {
+                        $Protections = Invoke-GithubRestMethod -Session $Session -Path "repos/$($repo.Properties.full_name)/branches/$($branch.name)/protection"
 
-                    # Check for Pull Request Reviews
-                    # pull requests are required before merging
-                    if ($Protections.required_pull_request_reviews) {
-                        
-                        $protection_required_pull_request_reviews = $False
-                        
-                        $protection_required_approving_review_count = $Protections.required_pull_request_reviews.required_approving_review_count
-                        if ($Protections.required_pull_request_reviews.required_approving_review_count) {
-                            $protection_required_pull_request_reviews = $True
-                        }
+                        $protection_enforce_admins = $Protections.enforce_admins.enabled
+                        $protection_lock_branch = $Protections.lock_branch.enabled
 
-                        $protection_require_code_owner_reviews = $Protections.required_pull_request_reviews.require_code_owner_reviews
-                        if ($Protections.required_pull_request_reviews.require_code_owner_reviews) {
-                            $protection_required_pull_request_reviews = $True
-                        }
+                        # Check for Pull Request Reviews
+                        # pull requests are required before merging
+                        if ($Protections.required_pull_request_reviews) {
+                            
+                            $protection_required_pull_request_reviews = $False
+                            
+                            $protection_required_approving_review_count = $Protections.required_pull_request_reviews.required_approving_review_count
+                            if ($Protections.required_pull_request_reviews.required_approving_review_count) {
+                                $protection_required_pull_request_reviews = $True
+                            }
 
-                        $protection_require_last_push_approval = $Protections.required_pull_request_reviews.require_last_push_approval
-                        if ($Protections.required_pull_request_reviews.require_last_push_approval) {
-                            $protection_required_pull_request_reviews = $True
-                        }
+                            $protection_require_code_owner_reviews = $Protections.required_pull_request_reviews.require_code_owner_reviews
+                            if ($Protections.required_pull_request_reviews.require_code_owner_reviews) {
+                                $protection_required_pull_request_reviews = $True
+                            }
 
-                        # We need an edge here
-                        foreach($user in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.users) {
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $user.node_id -EndId $branch.commit.sha))
-                        }
+                            $protection_require_last_push_approval = $Protections.required_pull_request_reviews.require_last_push_approval
+                            if ($Protections.required_pull_request_reviews.require_last_push_approval) {
+                                $protection_required_pull_request_reviews = $True
+                            }
 
-                        # We need an edge here
-                        foreach($team in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.teams) {
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $team.node_id -EndId $branch.commit.sha))
-                        }
+                            # We need an edge here
+                            foreach($user in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.users) {
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $user.node_id -EndId $branch.commit.sha))
+                            }
 
-                        # TODO: handle apps?
-                        foreach($app in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.apps) {
-                            #$null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $app.node_id -EndId $branch.commit.sha))
-                        }
+                            # We need an edge here
+                            foreach($team in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.teams) {
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $team.node_id -EndId $branch.commit.sha))
+                            }
 
-                        # We replaced BypassPrincipals with the above edges
-                        # Do we still need this value or is it implied by the edges?
-                        <#
-                        if ($BypassPrincipals) {
-                            $protection_bypass_pull_request_allowances = $BypassPrincipals.Count
+                            # TODO: handle apps?
+                            foreach($app in $Protections.required_pull_request_reviews.bypass_pull_request_allowances.apps) {
+                                #$null = $edges.Add((New-GitHoundEdge -Kind GHBypassPullRequestAllowances -StartId $app.node_id -EndId $branch.commit.sha))
+                            }
+
+                            # We replaced BypassPrincipals with the above edges
+                            # Do we still need this value or is it implied by the edges?
+                            <#
+                            if ($BypassPrincipals) {
+                                $protection_bypass_pull_request_allowances = $BypassPrincipals.Count
+                            }
+                            else {
+                                $protection_bypass_pull_request_allowances = 0
+                            }
+                            #>
                         }
                         else {
-                            $protection_bypass_pull_request_allowances = 0
+                            $protection_required_pull_request_reviews = $false
                         }
-                        #>
+
+                        # Check for restrictions
+                        if ($Protections.restrictions) {
+                            foreach($user in $Protections.restrictions.users) {
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $user.node_id -EndId $branch.commit.sha))
+                            }
+
+                            foreach($team in $Protections.restrictions.team) {
+                                $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $team.node_id -EndId $branch.commit.sha))
+                            }
+
+                            # TODO: handle apps?
+                            foreach($app in $Protections.restrictions.apps) {
+                                #$null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $app.node_id -EndId $branch.commit.sha))
+                            }
+
+                            # Same question as BypassPrincipals
+                            # Do we still need this value or is it implied by the edges?
+                            <#
+                            if ($RestrictionPrincipals) {
+                                $protection_push_restrictions = $RestrictionPrincipals.Count
+                            }
+                            #>
+                        }
+                        else {
+                            $protection_push_restrictions = 0
+                        }
                     }
-                    else {
+                    else 
+                    {
+                        # Here we just set all of the protection properties to false
+                        $protection_enforce_admins = $false
+                        $protection_lock_branch = $false
                         $protection_required_pull_request_reviews = $false
+                        $protection_required_approving_review_count = 0
+                        $protection_require_code_owner_reviews = $false
+                        $protection_require_last_push_approval = $false
+                        #$protection_bypass_pull_request_allowances = 0
+                        #$protection_push_restrictions = 0
                     }
 
-                    # Check for restrictions
-                    if ($Protections.restrictions) {
-                        foreach($user in $Protections.restrictions.users) {
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $user.node_id -EndId $branch.commit.sha))
-                        }
 
-                        foreach($team in $Protections.restrictions.team) {
-                            $null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $team.node_id -EndId $branch.commit.sha))
-                        }
+                    $branchId = [System.BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$($repo.properties.organization_id)_$($repo.properties.full_name)_$($branch.name)"))).Replace('-', '')
 
-                        # TODO: handle apps?
-                        foreach($app in $Protections.restrictions.apps) {
-                            #$null = $edges.Add((New-GitHoundEdge -Kind GHRestrictionsCanPush -StartId $app.node_id -EndId $branch.commit.sha))
-                        }
-
-                        # Same question as BypassPrincipals
-                        # Do we still need this value or is it implied by the edges?
-                        <#
-                        if ($RestrictionPrincipals) {
-                            $protection_push_restrictions = $RestrictionPrincipals.Count
-                        }
-                        #>
+                    $props = [pscustomobject]@{
+                        organization                               = Normalize-Null $repo.properties.organization_name
+                        organization_id                            = Normalize-Null $repo.properties.organization_id
+                        short_name                                 = Normalize-Null $branch.name
+                        name                                       = Normalize-Null "$($repo.properties.name)\$($branch.name)"
+                        id                                         = Normalize-Null $branchId
+                        commit_hash                                = Normalize-Null $branch.commit.sha
+                        commit_url                                 = Normalize-Null $branch.commit.url
+                        protected                                  = Normalize-Null $branch.protected
+                        protection_enforce_admins                  = Normalize-Null $protection_enforce_admins
+                        protection_lock_branch                     = Normalize-Null $protection_lock_branch
+                        protection_required_pull_request_reviews   = Normalize-Null $protection_required_pull_request_reviews
+                        protection_required_approving_review_count = Normalize-Null $protection_required_approving_review_count
+                        protection_require_code_owner_reviews      = Normalize-Null $protection_require_code_owner_reviews
+                        protection_require_last_push_approval      = Normalize-Null $protection_require_last_push_approval
+                        #protection_bypass_pull_request_allowances  = Normalize-Null $protection_bypass_pull_request_allowances
+                        #protection_push_restrictions               = Normalize-Null $protection_push_restrictions
                     }
-                    else {
-                        $protection_push_restrictions = 0
+
+                    foreach ($BranchProtectionProperty in $BranchProtectionProperties.GetEnumerator()) {
+                        $props | Add-Member -MemberType NoteProperty -Name $BranchProtectionProperty.Key -Value $BranchProtectionProperty.Value
                     }
+
+                    $null = $nodes.Add((New-GitHoundNode -Id $branchId -Kind GHBranch -Properties $props))
+                    $null = $edges.Add((New-GitHoundEdge -Kind GHHasBranch -StartId $repo.id -EndId $branchId))
                 }
-                else 
-                {
-                    # Here we just set all of the protection properties to false
-                    $protection_enforce_admins = $false
-                    $protection_lock_branch = $false
-                    $protection_required_pull_request_reviews = $false
-                    $protection_required_approving_review_count = 0
-                    $protection_require_code_owner_reviews = $false
-                    $protection_require_last_push_approval = $false
-                    #$protection_bypass_pull_request_allowances = 0
-                    #$protection_push_restrictions = 0
-                }
-
-
-                $branchId = [System.BitConverter]::ToString([System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$($repo.properties.organization_id)_$($repo.properties.full_name)_$($branch.name)"))).Replace('-', '')
-
-                $props = [pscustomobject]@{
-                    organization                               = Normalize-Null $repo.properties.organization_name
-                    organization_id                            = Normalize-Null $repo.properties.organization_id
-                    short_name                                 = Normalize-Null $branch.name
-                    name                                       = Normalize-Null "$($repo.properties.name)\$($branch.name)"
-                    id                                         = Normalize-Null $branchId
-                    commit_hash                                = Normalize-Null $branch.commit.sha
-                    commit_url                                 = Normalize-Null $branch.commit.url
-                    protected                                  = Normalize-Null $branch.protected
-                    protection_enforce_admins                  = Normalize-Null $protection_enforce_admins
-                    protection_lock_branch                     = Normalize-Null $protection_lock_branch
-                    protection_required_pull_request_reviews   = Normalize-Null $protection_required_pull_request_reviews
-                    protection_required_approving_review_count = Normalize-Null $protection_required_approving_review_count
-                    protection_require_code_owner_reviews      = Normalize-Null $protection_require_code_owner_reviews
-                    protection_require_last_push_approval      = Normalize-Null $protection_require_last_push_approval
-                    #protection_bypass_pull_request_allowances  = Normalize-Null $protection_bypass_pull_request_allowances
-                    #protection_push_restrictions               = Normalize-Null $protection_push_restrictions
-                }
-
-                foreach ($BranchProtectionProperty in $BranchProtectionProperties.GetEnumerator()) {
-                    $props | Add-Member -MemberType NoteProperty -Name $BranchProtectionProperty.Key -Value $BranchProtectionProperty.Value
-                }
-
-                $null = $nodes.Add((New-GitHoundNode -Id $branchId -Kind GHBranch -Properties $props))
-                $null = $edges.Add((New-GitHoundEdge -Kind GHHasBranch -StartId $repo.id -EndId $branchId))
+            }
+            catch {
+                Write-Warning "Failed to fetch branches for $($repo.properties.full_name) - $_"
+                continue
             }
         } -ThrottleLimit 25
     }
