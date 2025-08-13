@@ -248,7 +248,7 @@ function Invoke-GithubRestMethod {
               }
                 elseif (($httpException.status -eq "403" -and $httpException.message -match "rate limit") -or $httpException.status -eq "429") {
                     Write-Warning "Rate limit hit when doing Github RestAPI call. Retry $($retryCount + 1)/3"
-                    Write-Debug $_
+                    Write-Verbose $_
                     Wait-GithubRestRateLimit -Session $Session
                     $retryCount++
                 }
@@ -259,7 +259,7 @@ function Invoke-GithubRestMethod {
         }
 
         if (-not $requestSuccessful) {
-            throw "Failed after 3 retry attempts due to rate limiting"
+            throw "Failed after 3 retry attempts due to rate limiting for $Path"
         }
 
 
