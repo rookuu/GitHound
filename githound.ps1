@@ -380,7 +380,7 @@ function Invoke-GitHubGraphQL
 
 function Get-RateLimitInformation
 {
-    param(
+    Param(
         [Parameter(Position = 0, Mandatory = $true)]
         [PSTypeName('GitHound.Session')]
         $Session
@@ -391,7 +391,7 @@ function Get-RateLimitInformation
 }
 
 function Wait-GithubRateLimitReached {
-    param(
+    Param(
         [Parameter(Position = 0, Mandatory = $true)]
         [PSObject]
         $githubRateLimitInfo
@@ -410,7 +410,7 @@ function Wait-GithubRateLimitReached {
 }
 
 function Wait-GithubRestRateLimit {
-    param(
+    Param(
         [Parameter(Position = 0, Mandatory = $true)]
         [PSTypeName('GitHound.Session')]
         $Session
@@ -420,7 +420,7 @@ function Wait-GithubRestRateLimit {
 }
 
 function Wait-GithubGraphQlRateLimit {
-    param(
+    Param(
         [Parameter(Position = 0, Mandatory = $true)]
         [PSTypeName('GitHound.Session')]
         $Session
@@ -620,6 +620,9 @@ function Git-HoundUser
     $normalize_null = ${function:Normalize-Null}.ToString()
     $new_githoundnode = ${function:New-GitHoundNode}.ToString()
     $invoke_githubrestmethod = ${function:Invoke-GithubRestMethod}.ToString()
+    $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
+    $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
+    $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
 
     Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/members" | ForEach-Object -Parallel {
         
@@ -629,6 +632,9 @@ function Git-HoundUser
         ${function:Normalize-Null} = $using:normalize_null
         ${function:New-GitHoundNode} = $using:new_githoundnode
         ${function:Invoke-GithubRestMethod} = $using:invoke_githubrestmethod
+        ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
+        ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
+        ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
 
         $user = $_
         Write-Verbose "Fetching user details for $($user.login)"
@@ -739,6 +745,9 @@ function Git-HoundBranch
         $new_githoundnode = ${function:New-GitHoundNode}.ToString()
         $new_githoundedge = ${function:New-GitHoundEdge}.ToString()
         $invoke_githubrestmethod = ${function:Invoke-GithubRestMethod}.ToString()
+        $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
+        $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
+        $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
     }
 
     process
@@ -751,6 +760,9 @@ function Git-HoundBranch
             ${function:New-GitHoundNode} = $using:new_githoundnode
             ${function:New-GitHoundEdge} = $using:new_githoundedge
             ${function:Invoke-GithubRestMethod} = $using:invoke_githubrestmethod
+            ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
+            ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
+            ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
             $repo = $_
 
             Write-Verbose "Fetching branches for $($repo.properties.full_name)"
@@ -925,6 +937,9 @@ function Git-HoundOrganizationRole
 
     $new_githoundedge = ${function:New-GitHoundEdge}.ToString()
     $invoke_githubrestmethod = ${function:Invoke-GithubRestMethod}.ToString()
+    $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
+    $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
+    $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
 
     $orgAllRepoReadId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($Organization.id)_all_repo_read"))
     $orgAllRepoTriageId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($Organization.id)_all_repo_triage"))
@@ -1056,6 +1071,9 @@ function Git-HoundOrganizationRole
         $orgMembersId = $using:orgMembersId
         ${function:New-GitHoundEdge} = $using:new_githoundedge
         ${function:Invoke-GithubRestMethod} = $using:invoke_githubrestmethod
+        ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
+        ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
+        ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
         $user = $_
         
         switch((Invoke-GithubRestMethod -Session $Session -Path "orgs/$($organization.Properties.login)/memberships/$($user.login)").role)
@@ -1096,6 +1114,9 @@ function Git-HoundTeamRole
     $new_githoundnode = ${function:New-GitHoundNode}.ToString()
     $new_githoundedge = ${function:New-GitHoundEdge}.ToString()
     $invoke_githubrestmethod = ${function:Invoke-GithubRestMethod}.ToString()
+    $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
+    $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
+    $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
 
     Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/teams" | ForEach-Object -Parallel {
         
@@ -1107,6 +1128,9 @@ function Git-HoundTeamRole
         ${function:New-GitHoundNode} = $using:new_githoundnode
         ${function:New-GitHoundEdge} = $using:new_githoundedge
         ${function:Invoke-GithubRestMethod} = $using:invoke_githubrestmethod
+        ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
+        ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
+        ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
 
         $memberId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($_.node_id)_members"))
         $memberProps = [pscustomobject]@{
@@ -1181,6 +1205,9 @@ function Git-HoundRepositoryRole
     $new_githoundnode = ${function:New-GitHoundNode}.ToString()
     $new_githoundedge = ${function:New-GitHoundEdge}.ToString()
     $invoke_githubrestmethod = ${function:Invoke-GithubRestMethod}.ToString()
+    $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
+    $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
+    $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
 
     Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.properties.login)/repos" | ForEach-Object -Parallel{
         
@@ -1198,6 +1225,9 @@ function Git-HoundRepositoryRole
         ${function:New-GitHoundNode} = $using:new_githoundnode
         ${function:New-GitHoundEdge} = $using:new_githoundedge
         ${function:Invoke-GithubRestMethod} = $using:invoke_githubrestmethod
+        ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
+        ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
+        ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
         $repo = $_
 
         # Create $repo Read Role
