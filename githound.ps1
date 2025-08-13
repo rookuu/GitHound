@@ -9,8 +9,7 @@ function Get-GitHoundFunctionBundle {
         'Invoke-GithubRestMethod',
         'Wait-GithubRestRateLimit',
         'Wait-GithubRateLimitReached',
-        'Get-RateLimitInformation',
-        'Import-GitHoundFunctions'
+        'Get-RateLimitInformation'
     )
     
     # Register each function
