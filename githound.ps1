@@ -623,6 +623,7 @@ function Git-HoundUser
     $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
     $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
     $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
+    $invoke_generatepatforapp = ${function:Invoke-GeneratePATForApp}.ToString()
 
     Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/members" | ForEach-Object -Parallel {
         
@@ -635,6 +636,7 @@ function Git-HoundUser
         ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
         ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
         ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
+        ${function:Invoke-GeneratePATForApp} = $using:invoke_generatepatforapp
 
         $user = $_
         Write-Verbose "Fetching user details for $($user.login)"
@@ -748,6 +750,7 @@ function Git-HoundBranch
         $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
         $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
         $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
+        $invoke_generatepatforapp = ${function:Invoke-GeneratePATForApp}.ToString()
     }
 
     process
@@ -763,6 +766,7 @@ function Git-HoundBranch
             ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
             ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
             ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
+            ${function:Invoke-GeneratePATForApp} = $using:invoke_generatepatforapp
             $repo = $_
 
             Write-Verbose "Fetching branches for $($repo.properties.full_name)"
@@ -940,6 +944,7 @@ function Git-HoundOrganizationRole
     $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
     $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
     $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
+    $invoke_generatepatforapp = ${function:Invoke-GeneratePATForApp}.ToString()
 
     $orgAllRepoReadId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($Organization.id)_all_repo_read"))
     $orgAllRepoTriageId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($Organization.id)_all_repo_triage"))
@@ -1074,6 +1079,7 @@ function Git-HoundOrganizationRole
         ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
         ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
         ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
+        ${function:Invoke-GeneratePATForApp} = $using:invoke_generatepatforapp
         $user = $_
         
         switch((Invoke-GithubRestMethod -Session $Session -Path "orgs/$($organization.Properties.login)/memberships/$($user.login)").role)
@@ -1117,6 +1123,7 @@ function Git-HoundTeamRole
     $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
     $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
     $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
+    $invoke_generatepatforapp = ${function:Invoke-GeneratePATForApp}.ToString()
 
     Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.Properties.login)/teams" | ForEach-Object -Parallel {
         
@@ -1131,6 +1138,7 @@ function Git-HoundTeamRole
         ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
         ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
         ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
+        ${function:Invoke-GeneratePATForApp} = $using:invoke_generatepatforapp
 
         $memberId = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($_.node_id)_members"))
         $memberProps = [pscustomobject]@{
@@ -1208,6 +1216,7 @@ function Git-HoundRepositoryRole
     $get_ratelimitinformation = ${function:Get-RateLimitInformation}.ToString()
     $wait_githubrestlimitreached = ${function:Wait-GithubRateLimitReached}.ToString()
     $wait_githubrestlimit = ${function:Wait-GithubRestRateLimit}.ToString()
+    $invoke_generatepatforapp = ${function:Invoke-GeneratePATForApp}.ToString()
 
     Invoke-GithubRestMethod -Session $Session -Path "orgs/$($Organization.properties.login)/repos" | ForEach-Object -Parallel{
         
@@ -1228,6 +1237,7 @@ function Git-HoundRepositoryRole
         ${function:Get-RateLimitInformation} = $using:get_ratelimitinformation
         ${function:Wait-GithubRateLimitReached} = $using:wait_githubrestlimitreached
         ${function:Wait-GithubRestRateLimit} = $using:wait_githubrestlimit
+        ${function:Invoke-GeneratePATForApp} = $using:invoke_generatepatforapp
         $repo = $_
 
         # Create $repo Read Role
