@@ -306,7 +306,7 @@ function Invoke-GithubRestMethod {
         } while ($LinkHeader)
     }
     catch {
-        Write-Error $_
+        throw $_
     }
 } 
 
